@@ -12,17 +12,6 @@ Thanks for contributing! Please make sure CI is green before requesting review.
 
 -
 
-## Testing
-
-<!-- How did you verify the change? Include manual reproduction steps if relevant. -->
-
-- [ ] `bun run check`
-- [ ] `bun run lint`
-- [ ] `bun run format:check`
-- [ ] `bun run test`
-- [ ] `bun run lint:rust`
-- [ ] `bun run test:rust`
-
 ## Linked issues
 
 <!-- "Closes #123" / "Refs #456" -->
