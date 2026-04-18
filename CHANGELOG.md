@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-04-18
+
+First public release. Native desktop launcher for `llama-server` with
+recipe management, signed auto-updates, live metrics, and graceful
+cross-platform process lifecycle.
+
 ### Added
 
 - Recipe-command flag deny-list to prevent recipes from overriding
