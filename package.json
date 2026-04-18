@@ -1,7 +1,7 @@
 {
-  "name": "llama-recipe-mgr",
+  "name": "llama-recipe-manager",
   "version": "0.1.0",
-  "description": "",
+  "description": "Llama Recipe Manager — manage and launch llama-server recipes",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

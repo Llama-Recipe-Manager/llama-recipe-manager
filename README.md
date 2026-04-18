@@ -1,6 +1,6 @@
-# Tauri + SvelteKit + TypeScript
+# Llama Recipe Manager
 
-This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
+A desktop app to manage and launch `llama-server` recipes, built with Tauri, SvelteKit, and TypeScript.
 
 ## Recommended IDE Setup
 

@@ -37,6 +37,121 @@
   let formVision = $state(false);
   let formMmprojPath = $state('');
   let formGpuInfo = $state('');
+  let gpuSelect = $state('');
+
+  const GPU_OPTIONS: { group: string; items: string[] }[] = [
+    {
+      group: 'Apple Silicon',
+      items: [
+        'Apple M1 8GB', 'Apple M1 16GB',
+        'Apple M1 Pro 16GB', 'Apple M1 Pro 32GB',
+        'Apple M1 Max 32GB', 'Apple M1 Max 64GB',
+        'Apple M1 Ultra 64GB', 'Apple M1 Ultra 128GB',
+        'Apple M2 8GB', 'Apple M2 16GB', 'Apple M2 24GB',
+        'Apple M2 Pro 16GB', 'Apple M2 Pro 32GB',
+        'Apple M2 Max 32GB', 'Apple M2 Max 64GB', 'Apple M2 Max 96GB',
+        'Apple M2 Ultra 64GB', 'Apple M2 Ultra 128GB', 'Apple M2 Ultra 192GB',
+        'Apple M3 8GB', 'Apple M3 16GB', 'Apple M3 24GB',
+        'Apple M3 Pro 18GB', 'Apple M3 Pro 36GB',
+        'Apple M3 Max 36GB', 'Apple M3 Max 48GB', 'Apple M3 Max 64GB', 'Apple M3 Max 128GB',
+        'Apple M4 16GB', 'Apple M4 24GB', 'Apple M4 32GB',
+        'Apple M4 Pro 24GB', 'Apple M4 Pro 48GB',
+        'Apple M4 Max 36GB', 'Apple M4 Max 48GB', 'Apple M4 Max 64GB', 'Apple M4 Max 128GB',
+      ],
+    },
+    {
+      group: 'NVIDIA RTX 50 Series',
+      items: [
+        'NVIDIA RTX 5090 32GB',
+        'NVIDIA RTX 5080 16GB',
+        'NVIDIA RTX 5070 Ti 16GB',
+        'NVIDIA RTX 5070 12GB',
+        'NVIDIA RTX 5060 Ti 16GB', 'NVIDIA RTX 5060 Ti 8GB',
+        'NVIDIA RTX 5060 8GB',
+      ],
+    },
+    {
+      group: 'NVIDIA RTX 40 Series',
+      items: [
+        'NVIDIA RTX 4090 24GB',
+        'NVIDIA RTX 4080 Super 16GB', 'NVIDIA RTX 4080 16GB',
+        'NVIDIA RTX 4070 Ti Super 16GB', 'NVIDIA RTX 4070 Ti 12GB',
+        'NVIDIA RTX 4070 Super 12GB', 'NVIDIA RTX 4070 12GB',
+        'NVIDIA RTX 4060 Ti 16GB', 'NVIDIA RTX 4060 Ti 8GB',
+        'NVIDIA RTX 4060 8GB',
+      ],
+    },
+    {
+      group: 'NVIDIA RTX 30 Series',
+      items: [
+        'NVIDIA RTX 3090 Ti 24GB', 'NVIDIA RTX 3090 24GB',
+        'NVIDIA RTX 3080 Ti 12GB', 'NVIDIA RTX 3080 12GB', 'NVIDIA RTX 3080 10GB',
+        'NVIDIA RTX 3070 Ti 8GB', 'NVIDIA RTX 3070 8GB',
+        'NVIDIA RTX 3060 Ti 8GB', 'NVIDIA RTX 3060 12GB', 'NVIDIA RTX 3060 8GB',
+        'NVIDIA RTX 3050 8GB', 'NVIDIA RTX 3050 6GB',
+      ],
+    },
+    {
+      group: 'NVIDIA Professional',
+      items: [
+        'NVIDIA RTX 6000 Ada 48GB',
+        'NVIDIA RTX 5000 Ada 32GB',
+        'NVIDIA RTX A6000 48GB',
+        'NVIDIA RTX A5000 24GB',
+        'NVIDIA RTX A4000 16GB',
+      ],
+    },
+    {
+      group: 'AMD Radeon RX 7000',
+      items: [
+        'AMD RX 7900 XTX 24GB',
+        'AMD RX 7900 XT 20GB',
+        'AMD RX 7900 GRE 16GB',
+        'AMD RX 7800 XT 16GB',
+        'AMD RX 7700 XT 12GB',
+        'AMD RX 7600 XT 16GB', 'AMD RX 7600 8GB',
+      ],
+    },
+    {
+      group: 'AMD Radeon RX 6000',
+      items: [
+        'AMD RX 6950 XT 16GB', 'AMD RX 6900 XT 16GB',
+        'AMD RX 6800 XT 16GB', 'AMD RX 6800 16GB',
+        'AMD RX 6750 XT 12GB', 'AMD RX 6700 XT 12GB',
+        'AMD RX 6650 XT 8GB', 'AMD RX 6600 XT 8GB', 'AMD RX 6600 8GB',
+      ],
+    },
+    {
+      group: 'Intel Arc',
+      items: [
+        'Intel Arc B580 12GB',
+        'Intel Arc B570 10GB',
+        'Intel Arc A770 16GB', 'Intel Arc A770 8GB',
+        'Intel Arc A750 8GB',
+        'Intel Arc A580 8GB',
+      ],
+    },
+  ];
+
+  const ALL_GPU_VALUES = GPU_OPTIONS.flatMap(g => g.items);
+
+  function syncGpuSelectFromValue() {
+    if (!formGpuInfo) {
+      gpuSelect = '';
+    } else if (ALL_GPU_VALUES.includes(formGpuInfo)) {
+      gpuSelect = formGpuInfo;
+    } else {
+      gpuSelect = '__custom__';
+    }
+  }
+
+  function onGpuSelectChange() {
+    if (gpuSelect === '__custom__') {
+      // keep whatever's in formGpuInfo (user will edit in the text field)
+    } else {
+      formGpuInfo = gpuSelect;
+    }
+  }
   let formTags = $state('');
   let formErrors = $state<string[]>([]);
 
@@ -166,7 +281,7 @@
   function startNew() {
     formName = '';
     formDescription = '';
-    formCommand = '-ngl 99 -c 8192';
+    formCommand = '';
     formModelPath = '';
     formVision = false;
     formMmprojPath = '';
@@ -175,6 +290,7 @@
     formErrors = [];
     view = 'new';
     selectedId = null;
+    syncGpuSelectFromValue();
   }
 
   function startEdit() {
@@ -186,6 +302,7 @@
     formVision = !!selected.mmproj_path;
     formMmprojPath = selected.mmproj_path;
     formGpuInfo = selected.gpu_info;
+    syncGpuSelectFromValue();
     formTags = selected.tags;
     formErrors = [];
     view = 'edit';
@@ -574,7 +691,20 @@
           <div class="form-row">
             <div class="form-group flex-1">
               <label for="gpu_info">GPU / Hardware</label>
-              <input id="gpu_info" type="text" bind:value={formGpuInfo} placeholder="e.g. RTX 4090 24GB, M4 Max 128GB" />
+              <select id="gpu_info" bind:value={gpuSelect} onchange={onGpuSelectChange}>
+                <option value="">(none)</option>
+                {#each GPU_OPTIONS as grp}
+                  <optgroup label={grp.group}>
+                    {#each grp.items as item}
+                      <option value={item}>{item}</option>
+                    {/each}
+                  </optgroup>
+                {/each}
+                <option value="__custom__">Other (custom)...</option>
+              </select>
+              {#if gpuSelect === '__custom__'}
+                <input type="text" bind:value={formGpuInfo} placeholder="Describe your hardware" style="margin-top: 6px" />
+              {/if}
             </div>
             <div class="form-group flex-1">
               <label for="tags">Tags</label>
