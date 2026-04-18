@@ -77,11 +77,11 @@ Replace it and run `bun run icons` to regenerate every platform-native
 asset. The script (`scripts/make-icons.py`) deliberately treats each
 platform differently because their conventions disagree:
 
-| Platform | Output | Treatment |
-| --- | --- | --- |
-| macOS | `icon.icns` | Squircle mask (superellipse, n=5) + 824/1024 safe area, per Apple HIG. |
-| Windows | `icon.ico` | Multi-resolution 16/24/32/48/64/128/256, edge-to-edge, PNG-compressed entries. |
-| Linux | `16x16…512x512.png` | Square PNGs at freedesktop hicolor sizes, edge-to-edge transparent. |
+| Platform | Output              | Treatment                                                                      |
+| -------- | ------------------- | ------------------------------------------------------------------------------ |
+| macOS    | `icon.icns`         | Squircle mask (superellipse, n=5) + 824/1024 safe area, per Apple HIG.         |
+| Windows  | `icon.ico`          | Multi-resolution 16/24/32/48/64/128/256, edge-to-edge, PNG-compressed entries. |
+| Linux    | `16x16…512x512.png` | Square PNGs at freedesktop hicolor sizes, edge-to-edge transparent.            |
 
 Why the split: macOS owns the icon silhouette (so we pre-mask), while
 Windows and Linux expect raw square art and apply their own taskbar /

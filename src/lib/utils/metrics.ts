@@ -114,12 +114,7 @@ export interface ServerProps {
  * Render an SVG polyline `points` attribute scaled into the given box. Empty
  * series returns an empty string so the caller can short-circuit.
  */
-export function sparklinePoints(
-  values: number[],
-  width: number,
-  height: number,
-  pad = 2,
-): string {
+export function sparklinePoints(values: number[], width: number, height: number, pad = 2): string {
   if (values.length === 0) return '';
   const max = Math.max(1, ...values);
   const innerW = width - pad * 2;

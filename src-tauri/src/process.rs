@@ -469,7 +469,7 @@ fn send_graceful_signal(pid: Option<u32>) {
 /// (drain slots, close sockets, free GPU memory) just like SIGTERM on Unix.
 #[cfg(windows)]
 fn send_graceful_signal(pid: Option<u32>) {
-    use windows_sys::Win32::System::Console::{CTRL_BREAK_EVENT, GenerateConsoleCtrlEvent};
+    use windows_sys::Win32::System::Console::{GenerateConsoleCtrlEvent, CTRL_BREAK_EVENT};
     if let Some(pid) = pid {
         // Safety: GenerateConsoleCtrlEvent is safe to call from any thread,
         // returns 0 on failure (which we ignore — escalation timer handles it).

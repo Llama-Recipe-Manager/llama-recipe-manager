@@ -73,8 +73,12 @@ describe('parseMetrics', () => {
 
 describe('recentRates', () => {
   it('divides token deltas by time deltas', () => {
-    const a = parseMetrics('llamacpp:tokens_predicted_total 100\nllamacpp:tokens_predicted_seconds_total 5\n');
-    const b = parseMetrics('llamacpp:tokens_predicted_total 200\nllamacpp:tokens_predicted_seconds_total 7\n');
+    const a = parseMetrics(
+      'llamacpp:tokens_predicted_total 100\nllamacpp:tokens_predicted_seconds_total 5\n',
+    );
+    const b = parseMetrics(
+      'llamacpp:tokens_predicted_total 200\nllamacpp:tokens_predicted_seconds_total 7\n',
+    );
     const r = recentRates(a, b);
     expect(r.genTokPerSec).toBe(50);
   });

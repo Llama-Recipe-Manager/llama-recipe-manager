@@ -89,13 +89,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="backdrop" onclick={onClose}></div>
-  <div
-    class="dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="about-title"
-    tabindex="-1"
-  >
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="about-title" tabindex="-1">
     <header class="head">
       <div class="brand">
         <img src="/icon.png" alt="" class="logo" aria-hidden="true" />
@@ -114,14 +108,17 @@
           </div>
         </div>
       </div>
-      <button
-        class="close-btn"
-        onclick={onClose}
-        title="Close"
-        aria-label="Close About dialog"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="close-btn" onclick={onClose} title="Close" aria-label="Close About dialog">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M18 6L6 18M6 6l12 12" />
         </svg>
       </button>
@@ -231,12 +228,22 @@
   }
 
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   @keyframes pop-in {
-    from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
   }
 
   .head {

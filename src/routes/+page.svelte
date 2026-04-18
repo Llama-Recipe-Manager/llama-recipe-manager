@@ -189,84 +189,84 @@
 </script>
 
 <div class="app-shell">
-<UpdateBanner />
-<div class="app">
-  <NavRail
-    {section}
-    serverRunning={isServerRunning}
-    onSelect={goSection}
-    onJumpToRunning={jumpToRunningRecipe}
-    onAbout={() => (aboutOpen = true)}
-  />
-
-  {#if section === 'recipes'}
-    <Sidebar
-      bind:searchQuery
-      activeId={view === 'list' ? recipesStore.selectedId : null}
-      onSelect={selectRecipe}
-      onNew={startNew}
-      onStop={handleStop}
+  <UpdateBanner />
+  <div class="app">
+    <NavRail
+      {section}
+      serverRunning={isServerRunning}
+      onSelect={goSection}
+      onJumpToRunning={jumpToRunningRecipe}
+      onAbout={() => (aboutOpen = true)}
     />
-  {:else if section === 'community' && FEATURES.community}
-    <CommunitySidebar bind:filters={communityFilters} />
-  {/if}
 
-  <main class="content">
-    {#if error}
-      <div class="error-bar">
-        <span>{error}</span>
-        <button onclick={() => (error = '')}>Dismiss</button>
-      </div>
-    {/if}
-
-    {#if section === 'settings'}
-      <SettingsForm onBack={() => goSection('recipes')} onError={setError} />
-    {:else if section === 'community' && FEATURES.community}
-      <CommunityView filters={communityFilters} />
-    {:else if view === 'new'}
-      <RecipeForm mode="new" onCancel={cancelEdit} {onSaved} onError={setError} />
-    {:else if view === 'edit' && selected}
-      <RecipeForm
-        mode="edit"
-        initial={selected}
-        onCancel={cancelEdit}
-        {onSaved}
-        onError={setError}
-      />
-    {:else if selected}
-      <RecipeDetail
-        recipe={selected}
-        onEdit={startEdit}
-        onStart={handleStart}
+    {#if section === 'recipes'}
+      <Sidebar
+        bind:searchQuery
+        activeId={view === 'list' ? recipesStore.selectedId : null}
+        onSelect={selectRecipe}
+        onNew={startNew}
         onStop={handleStop}
-        {onDeleted}
-        {onDuplicated}
-        onError={setError}
       />
-    {:else}
-      <div class="empty-state">
-        <div class="empty-icon">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-          >
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline
-              points="14,2 14,8 20,8"
-            /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" />
-          </svg>
-        </div>
-        <h2>No recipe selected</h2>
-        <p>Select a recipe from the sidebar or create a new one to get started.</p>
-        <button class="btn primary" onclick={startNew}>Create Recipe</button>
-      </div>
+    {:else if section === 'community' && FEATURES.community}
+      <CommunitySidebar bind:filters={communityFilters} />
     {/if}
-  </main>
-</div>
+
+    <main class="content">
+      {#if error}
+        <div class="error-bar">
+          <span>{error}</span>
+          <button onclick={() => (error = '')}>Dismiss</button>
+        </div>
+      {/if}
+
+      {#if section === 'settings'}
+        <SettingsForm onBack={() => goSection('recipes')} onError={setError} />
+      {:else if section === 'community' && FEATURES.community}
+        <CommunityView filters={communityFilters} />
+      {:else if view === 'new'}
+        <RecipeForm mode="new" onCancel={cancelEdit} {onSaved} onError={setError} />
+      {:else if view === 'edit' && selected}
+        <RecipeForm
+          mode="edit"
+          initial={selected}
+          onCancel={cancelEdit}
+          {onSaved}
+          onError={setError}
+        />
+      {:else if selected}
+        <RecipeDetail
+          recipe={selected}
+          onEdit={startEdit}
+          onStart={handleStart}
+          onStop={handleStop}
+          {onDeleted}
+          {onDuplicated}
+          onError={setError}
+        />
+      {:else}
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            >
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline
+                points="14,2 14,8 20,8"
+              /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" />
+            </svg>
+          </div>
+          <h2>No recipe selected</h2>
+          <p>Select a recipe from the sidebar or create a new one to get started.</p>
+          <button class="btn primary" onclick={startNew}>Create Recipe</button>
+        </div>
+      {/if}
+    </main>
+  </div>
 </div>
 
 <AboutDialog open={aboutOpen} onClose={() => (aboutOpen = false)} onError={setError} />

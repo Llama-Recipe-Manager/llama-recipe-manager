@@ -186,7 +186,11 @@ class ServerStore {
     this.healthAbort = ac;
 
     const loop = async () => {
-      while (!ac.signal.aborted && this.status?.running && (this.phase as ServerPhase) !== 'stopping') {
+      while (
+        !ac.signal.aborted &&
+        this.status?.running &&
+        (this.phase as ServerPhase) !== 'stopping'
+      ) {
         const ok = await fetchHealthOk(settingsStore.current, ac.signal);
         if (ac.signal.aborted || (this.phase as ServerPhase) === 'stopping') return;
         if (ok) {

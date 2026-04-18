@@ -119,22 +119,60 @@
       {/if}
     </div>
     <div class="detail-actions">
-      <button class="btn-icon" onclick={onEdit} title="Edit" aria-label="Edit" disabled={isThisActive}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <button
+        class="btn-icon"
+        onclick={onEdit}
+        title="Edit"
+        aria-label="Edit"
+        disabled={isThisActive}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
           <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
         </svg>
       </button>
       <button class="btn-icon" onclick={handleDuplicate} title="Duplicate" aria-label="Duplicate">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
           <rect x="9" y="9" width="13" height="13" rx="2" />
           <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
         </svg>
       </button>
-      <button class="btn-icon danger-icon" onclick={handleDelete} title="Delete" aria-label="Delete" disabled={isThisActive}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <button
+        class="btn-icon danger-icon"
+        onclick={handleDelete}
+        title="Delete"
+        aria-label="Delete"
+        disabled={isThisActive}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
           <polyline points="3,6 5,6 21,6" />
-          <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2" />
+          <path
+            d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"
+          />
         </svg>
       </button>
     </div>
@@ -144,10 +182,20 @@
     <div class="crash-banner" role="alert">
       <div class="crash-text">
         <strong>Server crashed</strong>
-        <span>llama-server exited unexpectedly ({crashInfo}). Check the logs below for the reason.</span>
+        <span
+          >llama-server exited unexpectedly ({crashInfo}). Check the logs below for the reason.</span
+        >
       </div>
       <button class="crash-dismiss" onclick={() => serverStore.dismissExit()} aria-label="Dismiss">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        >
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
@@ -159,11 +207,7 @@
   <div class="hero" class:running={isReady} class:starting={isStarting} class:stopping={isStopping}>
     <div class="hero-left">
       <div class="status-row">
-        <span
-          class="state-dot"
-          class:on={isReady}
-          class:warming={isStarting || isStopping}
-        ></span>
+        <span class="state-dot" class:on={isReady} class:warming={isStarting || isStopping}></span>
         <span class="state-label">
           {#if isStopping}
             Stopping…
@@ -195,7 +239,15 @@
       {#if isThisActive}
         {#if webUiAvailable}
           <button class="btn primary" onclick={handleOpenWebUi}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
               <polyline points="15 3 21 3 21 9" />
               <line x1="10" y1="14" x2="21" y2="3" />
@@ -371,21 +423,13 @@
 
   .hero.running {
     border-color: rgba(52, 199, 89, 0.45);
-    background: linear-gradient(
-      180deg,
-      rgba(52, 199, 89, 0.07) 0%,
-      var(--bg-secondary) 100%
-    );
+    background: linear-gradient(180deg, rgba(52, 199, 89, 0.07) 0%, var(--bg-secondary) 100%);
   }
 
   .hero.starting,
   .hero.stopping {
     border-color: rgba(255, 159, 10, 0.45);
-    background: linear-gradient(
-      180deg,
-      rgba(255, 159, 10, 0.07) 0%,
-      var(--bg-secondary) 100%
-    );
+    background: linear-gradient(180deg, rgba(255, 159, 10, 0.07) 0%, var(--bg-secondary) 100%);
   }
 
   .hero-left {

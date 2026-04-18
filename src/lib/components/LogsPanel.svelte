@@ -53,7 +53,9 @@
     <div class="logs-title">
       <span class="dot" class:live={serverStore.anyRunning()}></span>
       <h3>Logs</h3>
-      <span class="count">{serverStore.logs.length} {serverStore.logs.length === 1 ? 'line' : 'lines'}</span>
+      <span class="count"
+        >{serverStore.logs.length} {serverStore.logs.length === 1 ? 'line' : 'lines'}</span
+      >
     </div>
     <div class="logs-actions">
       <input
@@ -79,7 +81,9 @@
   <div class="viewer" bind:this={logContainer} onscroll={onScroll}>
     {#if serverStore.logs.length === 0}
       <div class="empty">
-        {serverStore.anyRunning() ? 'Waiting for output…' : 'No logs yet. Start the server to see output.'}
+        {serverStore.anyRunning()
+          ? 'Waiting for output…'
+          : 'No logs yet. Start the server to see output.'}
       </div>
     {:else if filteredLogs.length === 0}
       <div class="empty">No lines match “{filter}”.</div>

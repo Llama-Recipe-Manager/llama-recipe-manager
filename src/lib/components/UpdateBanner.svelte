@@ -25,7 +25,9 @@
     </div>
     <div class="banner-actions">
       <button class="btn ghost" onclick={() => updaterStore.dismiss()}>Later</button>
-      <button class="btn primary" onclick={() => updaterStore.install()}>Install &amp; Restart</button>
+      <button class="btn primary" onclick={() => updaterStore.install()}
+        >Install &amp; Restart</button
+      >
     </div>
   </div>
 {:else if updaterStore.status === 'downloading'}
@@ -126,7 +128,11 @@
   }
 
   @keyframes slide {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(400%); }
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
   }
 </style>

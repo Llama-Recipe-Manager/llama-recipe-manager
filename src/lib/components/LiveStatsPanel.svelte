@@ -2,12 +2,7 @@
   import { onDestroy } from 'svelte';
 
   import { settingsStore } from '$lib/stores/settings.svelte';
-  import {
-    fetchHealthOk,
-    fetchMetricsText,
-    fetchProps,
-    fetchSlots,
-  } from '$lib/utils/llamaClient';
+  import { fetchHealthOk, fetchMetricsText, fetchProps, fetchSlots } from '$lib/utils/llamaClient';
   import {
     emptyMetrics,
     formatSeconds,
@@ -158,7 +153,9 @@
         {:else if lastError}
           <span class="err">{lastError}</span>
         {:else}
-          updated {lastUpdate ? `${Math.max(0, Math.round((Date.now() - lastUpdate) / 1000))}s ago` : ''}
+          updated {lastUpdate
+            ? `${Math.max(0, Math.round((Date.now() - lastUpdate) / 1000))}s ago`
+            : ''}
         {/if}
       </span>
     </div>
@@ -252,13 +249,21 @@
           {#if series.prompt.length > 1}
             <polyline
               class="prompt"
-              points={sparklinePoints(series.prompt.map((v) => v / peakRate), 240, 60)}
+              points={sparklinePoints(
+                series.prompt.map((v) => v / peakRate),
+                240,
+                60,
+              )}
             />
           {/if}
           {#if series.gen.length > 1}
             <polyline
               class="gen"
-              points={sparklinePoints(series.gen.map((v) => v / peakRate), 240, 60)}
+              points={sparklinePoints(
+                series.gen.map((v) => v / peakRate),
+                240,
+                60,
+              )}
             />
           {/if}
         </svg>
@@ -529,7 +534,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s, border-color 0.2s;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s;
   }
 
   .slot.busy {
