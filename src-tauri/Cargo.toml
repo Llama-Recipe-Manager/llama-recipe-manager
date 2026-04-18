@@ -1,6 +1,6 @@
 [package]
 name = "llama-recipe-manager"
-version = "0.1.0"
+version = "0.1.1"
 description = "Llama Recipe Manager — manage and launch llama-server recipes"
 authors = ["Mohammad Ashar Khan <ashar786khan@gmail.com>"]
 license = "MIT"

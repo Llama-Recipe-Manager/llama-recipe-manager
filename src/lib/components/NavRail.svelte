@@ -50,7 +50,8 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M4 6h16M4 12h16M4 18h10" />
+            <path d="M3 11l9-8 9 8" />
+            <path d="M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
           </svg>
         {:else if item.id === 'community'}
           <svg
