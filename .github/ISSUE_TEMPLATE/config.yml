@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/coder3101/llama-recipe-manager/security/advisories/new
+    about: Report a vulnerability privately. Do not file a public issue.
+  - name: Question / discussion
+    url: https://github.com/coder3101/llama-recipe-manager/discussions
+    about: For usage questions, ideas, or general discussion.

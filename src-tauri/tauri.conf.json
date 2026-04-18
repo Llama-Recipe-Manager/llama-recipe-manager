@@ -27,12 +27,29 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
+      "icons/16x16.png",
       "icons/32x32.png",
+      "icons/48x48.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
+      "icons/256x256.png",
+      "icons/512x512.png",
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/coder3101/llama-recipe-manager/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJFQjhEQUU5QTcyMDhCMzQKUldRMGl5Q242ZHE0dmxISTVtSHNaZXBXU3RCVUJ0SzNYb1lSaERldzBZaTMxaVVjYXdOVE5RTUkK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

@@ -17,13 +17,13 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
 }
 
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   --bg-primary: #1c1c1e;
   --bg-secondary: #2c2c2e;
   --bg-tertiary: #3a3a3c;
@@ -32,12 +32,12 @@
   --text-secondary: #a1a1a6;
   --text-tertiary: #6e6e73;
   --border: #3a3a3c;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme='light']) {
     --bg-primary: #1c1c1e;
     --bg-secondary: #2c2c2e;
     --bg-tertiary: #3a3a3c;
@@ -46,18 +46,21 @@
     --text-secondary: #a1a1a6;
     --text-tertiary: #6e6e73;
     --border: #3a3a3c;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-    --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
   font-family: var(--font-sans);
@@ -79,7 +82,9 @@ button {
   color: inherit;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
@@ -91,7 +96,9 @@ input, textarea, select {
   transition: border-color 0.15s;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   border-color: var(--accent);
 }
 

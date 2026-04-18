@@ -1,0 +1,66 @@
+name: Bug report
+description: Something isn't working
+title: '[Bug]: '
+labels: ['bug', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill out the form
+        below — it makes triage much faster.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Help → About, or the value in `package.json`.
+      placeholder: '0.1.0'
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU / Hardware
+      placeholder: 'NVIDIA RTX 4090 24GB'
+  - type: input
+    id: llama_server
+    attributes:
+      label: llama-server version
+      description: Output of `llama-server --version`.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the app
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Server logs from the Logs panel, console errors, anything useful.
+      render: shell

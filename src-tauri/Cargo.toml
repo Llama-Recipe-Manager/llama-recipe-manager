@@ -2,8 +2,32 @@
 name = "llama-recipe-manager"
 version = "0.1.0"
 description = "Llama Recipe Manager — manage and launch llama-server recipes"
-authors = ["you"]
+authors = ["Mohammad Ashar Khan <ashar786khan@gmail.com>"]
+license = "MIT"
 edition = "2021"
+repository = "https://github.com/coder3101/llama-recipe-manager"
+homepage = "https://github.com/coder3101/llama-recipe-manager"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Pedantic lints we explicitly opt out of for ergonomic Tauri code.
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+needless_pass_by_value = "allow"
+too_many_lines = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_lossless = "allow"
+unused_async = "allow"
+uninlined_format_args = "allow"
+redundant_closure_for_method_calls = "allow"
+map_unwrap_or = "allow"
+match_same_arms = "allow"
+doc_markdown = "allow"
+similar_names = "allow"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -28,4 +52,21 @@ chrono = { version = "0.4", features = ["serde"] }
 shell-words = "1"
 tokio = { version = "1", features = ["process", "io-util", "sync", "time"] }
 tauri-plugin-dialog = "2.7.0"
+
+# Used to send SIGTERM for a graceful llama-server shutdown on Unix.
+[target."cfg(unix)".dependencies]
+libc = "0.2"
+
+# Used to send Ctrl+Break to the llama-server process group on Windows
+# (the equivalent of SIGTERM for a console child of a GUI parent).
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.59", features = ["Win32_System_Console", "Win32_Foundation"] }
+
+# Auto-updater is a desktop-only plugin (mobile uses store updates).
+[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+
+[dev-dependencies]
+tempfile = "3"
 

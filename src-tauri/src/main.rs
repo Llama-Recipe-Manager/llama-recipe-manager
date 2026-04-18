@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    llama_recipe_manager_lib::run()
+    llama_recipe_manager_lib::run();
 }
