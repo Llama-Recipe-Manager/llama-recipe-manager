@@ -20,8 +20,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # macOS is built ARM-native only — `macos-latest` already runs on
+          # Apple Silicon, and Apple Silicon is the only Mac hardware
+          # llama.cpp users meaningfully care about for local inference.
+          # If we ever need an x86_64 build, add it here as a separate row
+          # (cleaner than a universal binary, which would double the .dmg
+          # size and complicate updater signatures).
           - platform: macos-latest
-            args: '--target universal-apple-darwin'
+            args: '--target aarch64-apple-darwin'
           - platform: ubuntu-latest
             args: ''
           - platform: windows-latest
@@ -36,7 +42,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
 
       - name: Install Linux Tauri prerequisites
         if: matrix.platform == 'ubuntu-latest'

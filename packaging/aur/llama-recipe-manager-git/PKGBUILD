@@ -1,0 +1,67 @@
+# Maintainer: Mohammad Ashar Khan <ashar786khan@gmail.com>
+#
+# VCS variant — always tracks `main`. The pkgver() helper turns the
+# latest tag + commit count + short-SHA into a monotonically increasing
+# version string, so `pacman -U` can replace older builds cleanly.
+
+pkgname=llama-recipe-manager-git
+_pkgname=llama-recipe-manager
+pkgver=0.0.0.r0.g0000000
+pkgrel=1
+pkgdesc="Native desktop launcher for llama-server (git, tracks main) — save and switch llama.cpp invocations as named recipes"
+arch=('x86_64' 'aarch64')
+url="https://github.com/coder3101/llama-recipe-manager"
+license=('MIT')
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+depends=(
+    'webkit2gtk-4.1'
+    'gtk3'
+    'librsvg'
+    'libsoup3'
+)
+makedepends=(
+    'git'
+    'rust'
+    'bun'
+    'pkgconf'
+    'patchelf'
+    'file'
+)
+optdepends=(
+    'llama.cpp: provides the llama-server binary the app launches'
+)
+options=('!lto')
+source=("$_pkgname::git+https://github.com/coder3101/llama-recipe-manager.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "$_pkgname"
+    # `git describe` produces e.g. v0.1.0-12-gabc1234 -> 0.1.0.r12.gabc1234.
+    # If there is no tag yet (pristine fork), fall back to revcount.shortsha.
+    git describe --long --tags --abbrev=7 2>/dev/null \
+        | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' \
+        || printf "r%s.%s" \
+            "$(git rev-list --count HEAD)" \
+            "$(git rev-parse --short=7 HEAD)"
+}
+
+prepare() {
+    cd "$_pkgname"
+    bun install --frozen-lockfile
+}
+
+build() {
+    cd "$_pkgname"
+    bun run tauri build
+}
+
+package() {
+    cd "$_pkgname/src-tauri/target/release/bundle/deb"
+    local debfile
+    debfile=$(ls ./*.deb | head -1)
+    bsdtar -O -xf "$debfile" data.tar.gz | bsdtar -xf - -C "$pkgdir"
+
+    install -Dm644 "$srcdir/$_pkgname/LICENSE" \
+        "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -36,6 +36,17 @@ each model.
 
 Pre-built bundles ship on the
 [Releases](https://github.com/coder3101/llama-recipe-manager/releases) page.
+
+Arch users can install from the AUR:
+
+```bash
+# Latest release (recommended)
+yay -S llama-recipe-manager
+
+# Bleeding-edge, tracks main
+yay -S llama-recipe-manager-git
+```
+
 To build from source:
 
 ```bash

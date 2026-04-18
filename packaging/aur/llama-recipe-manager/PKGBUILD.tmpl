@@ -1,0 +1,57 @@
+# Maintainer: Mohammad Ashar Khan <ashar786khan@gmail.com>
+#
+# This file is a TEMPLATE — placeholders are substituted by
+# .github/workflows/aur.yml on every GitHub Release. Do not edit the
+# rendered PKGBUILD on AUR directly; edit this file in the upstream repo
+# and let the workflow push.
+
+pkgname=llama-recipe-manager
+pkgver=__PKGVER__
+pkgrel=1
+pkgdesc="Native desktop launcher for llama-server — save and switch llama.cpp invocations as named recipes"
+arch=('x86_64' 'aarch64')
+url="https://github.com/coder3101/llama-recipe-manager"
+license=('MIT')
+depends=(
+    'webkit2gtk-4.1'
+    'gtk3'
+    'librsvg'
+    'libsoup3'
+)
+makedepends=(
+    'rust'
+    'bun'
+    'pkgconf'
+    'patchelf'
+    'file'
+)
+optdepends=(
+    'llama.cpp: provides the llama-server binary the app launches'
+)
+options=('!lto')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/coder3101/llama-recipe-manager/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP') # filled in by `updpkgsums` in CI before publish
+
+prepare() {
+    cd "$pkgname-$pkgver"
+    bun install --frozen-lockfile
+}
+
+build() {
+    cd "$pkgname-$pkgver"
+    # Tauri's bundler produces both the binary and the .deb under target/.
+    # We extract the .deb in package() to reuse Tauri's authoritative
+    # .desktop entry, hicolor icons, and binary placement instead of
+    # hand-rolling them — keeps the AUR install identical to the .deb.
+    bun run tauri build
+}
+
+package() {
+    cd "$pkgname-$pkgver/src-tauri/target/release/bundle/deb"
+    local debfile
+    debfile=$(ls ./*.deb | head -1)
+    bsdtar -O -xf "$debfile" data.tar.gz | bsdtar -xf - -C "$pkgdir"
+
+    install -Dm644 "$srcdir/$pkgname-$pkgver/LICENSE" \
+        "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

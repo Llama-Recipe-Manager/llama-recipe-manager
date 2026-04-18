@@ -179,7 +179,10 @@ impl ProcessManager {
         // be killable via TerminateProcess.
         #[cfg(windows)]
         {
-            use std::os::windows::process::CommandExt;
+            // `tokio::process::Command` exposes `creation_flags` directly on
+            // Windows — we don't need to pull in `std::os::windows::process::CommandExt`
+            // (doing so trips `unused-imports` since the trait method isn't
+            // actually being resolved through the std trait).
             const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
             cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
         }
