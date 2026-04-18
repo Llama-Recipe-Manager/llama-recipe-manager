@@ -36,17 +36,6 @@ each model.
 
 Pre-built bundles ship on the
 [Releases](https://github.com/coder3101/llama-recipe-manager/releases) page.
-
-Arch users can install from the AUR:
-
-```bash
-# Latest release (recommended)
-yay -S llama-recipe-manager
-
-# Bleeding-edge, tracks main
-yay -S llama-recipe-manager-git
-```
-
 To build from source:
 
 ```bash
@@ -75,7 +64,9 @@ _just_ the flags — host / port / model / mmproj are injected automatically.
 ## Documentation
 
 - [Development guide](./docs/Development.md) — build, commands, repo layout,
-  app icon regeneration, releases & auto-update, data locations.
+  app icon regeneration, data locations.
+- [Release process](./docs/Development.md#releasing--auto-update) — version
+  bumps, tag conventions, hotfix flow.
 - [Security policy](./SECURITY.md) — threat model and how to report issues.
 - [Contributing](./CONTRIBUTING.md) — PR workflow, commit style, adding a
   database migration.
