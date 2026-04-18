@@ -88,7 +88,7 @@
     {:else if filteredLogs.length === 0}
       <div class="empty">No lines match “{filter}”.</div>
     {:else}
-      {#each filteredLogs as log}
+      {#each filteredLogs as log, i (i)}
         <div class="line" class:stderr={log.is_stderr}>{log.line}</div>
       {/each}
     {/if}

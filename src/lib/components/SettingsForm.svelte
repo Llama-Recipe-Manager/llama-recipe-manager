@@ -113,7 +113,7 @@
             <div class="server-info-row">
               <span class="server-info-label">GPU{info.gpu_devices.length > 1 ? 's' : ''}</span>
               <div class="server-info-value">
-                {#each info.gpu_devices as gpu}
+                {#each info.gpu_devices as gpu, i (i)}
                   <div class="gpu-line">
                     {gpu.name}
                     {#if gpu.vram_mib > 0}

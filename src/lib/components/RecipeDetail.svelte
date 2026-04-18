@@ -282,7 +282,7 @@
     {#if recipe.mmproj_path}
       <span class="badge cap">vision</span>
     {/if}
-    {#each recipe.tags.split(',').filter((t) => t.trim()) as tag}
+    {#each recipe.tags.split(',').filter((t) => t.trim()) as tag, i (i)}
       <span class="badge tag">{tag.trim()}</span>
     {/each}
     <span class="meta-spacer"></span>

@@ -46,7 +46,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.39", features = ["bundled"] }
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 shell-words = "1"
@@ -60,7 +60,10 @@ libc = "0.2"
 # Used to send Ctrl+Break to the llama-server process group on Windows
 # (the equivalent of SIGTERM for a console child of a GUI parent).
 [target."cfg(windows)".dependencies]
-windows-sys = { version = "0.59", features = ["Win32_System_Console", "Win32_Foundation"] }
+windows-sys = { version = "0.61", features = [
+    "Win32_System_Console",
+    "Win32_Foundation",
+] }
 
 # Auto-updater is a desktop-only plugin (mobile uses store updates).
 [target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
@@ -69,4 +72,3 @@ tauri-plugin-process = "2"
 
 [dev-dependencies]
 tempfile = "3"
-

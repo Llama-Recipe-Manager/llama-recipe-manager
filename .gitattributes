@@ -1,0 +1,39 @@
+# Pin line endings for source files so Windows runners (with the default
+# `core.autocrlf=true`) don't rewrite LF -> CRLF on checkout. rustfmt is
+# configured with `newline_style = "Unix"` and would otherwise fail in CI.
+* text=auto eol=lf
+
+# Source code -- always LF.
+*.rs        text eol=lf
+*.toml      text eol=lf
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.svelte    text eol=lf
+*.json      text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.sh        text eol=lf
+*.py        text eol=lf
+*.sql       text eol=lf
+
+# Windows scripts intentionally keep CRLF so they run as expected.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# Binary -- never touch.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.icns      binary
+*.woff      binary
+*.woff2     binary
+*.gguf      binary

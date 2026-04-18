@@ -108,7 +108,7 @@
 
   {#if formErrors.length > 0}
     <div class="form-errors">
-      {#each formErrors as err}
+      {#each formErrors as err, i (i)}
         <div class="form-error-line">{err}</div>
       {/each}
     </div>
@@ -192,9 +192,9 @@
         <label for="gpu_info">GPU / Hardware</label>
         <select id="gpu_info" bind:value={gpuSelect} onchange={onGpuSelectChange}>
           <option value="">(none)</option>
-          {#each GPU_OPTIONS as grp}
+          {#each GPU_OPTIONS as grp (grp.group)}
             <optgroup label={grp.group}>
-              {#each grp.items as item}
+              {#each grp.items as item (item)}
                 <option value={item}>{item}</option>
               {/each}
             </optgroup>

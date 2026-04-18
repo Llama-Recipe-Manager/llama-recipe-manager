@@ -223,7 +223,7 @@
 
   {#if slotsEnabled && slots.length > 0}
     <div class="slot-strip" aria-label="Slot activity">
-      {#each slots as slot}
+      {#each slots as slot (slot.id)}
         <div class="slot" class:busy={slot.is_processing} title="Slot {slot.id}">
           <span class="slot-id">{slot.id}</span>
         </div>
@@ -286,7 +286,7 @@
           <line class="grid" x1="0" y1="40" x2="240" y2="40" />
           {#if activitySeries.length > 0}
             {@const barW = 240 / activitySeries.length}
-            {#each activitySeries as a, i}
+            {#each activitySeries as a, i (i)}
               {@const activeH = (a.active / peakActivity) * 56}
               {@const queueH = (a.queue / peakActivity) * 56}
               <rect
