@@ -1,0 +1,53 @@
+name: Refresh bun.lock on Dependabot npm PRs
+
+# Why this exists: Dependabot has no native Bun support
+# (https://github.com/dependabot/dependabot-core/issues/10584), so when it
+# bumps a JS dependency it edits `package.json` only — `bun.lock` stays
+# stale and our `bun install --frozen-lockfile` step in CI rejects the PR.
+# This workflow runs `bun install`, commits the regenerated lockfile back
+# onto the Dependabot branch, and pushes. Subsequent CI runs then pass.
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  refresh:
+    # Only react to Dependabot's own PRs; human-authored package.json edits
+    # should commit `bun.lock` themselves so the diff is reviewable.
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Check out the PR branch so we can push back to it.
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          # `GITHUB_TOKEN` is fine for same-repo PRs (Dependabot opens from
+          # the same repo). For forks this would need a PAT — but Dependabot
+          # never opens cross-repo PRs.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Regenerate bun.lock
+        run: bun install --no-summary
+
+      - name: Commit & push if lockfile changed
+        run: |
+          if git diff --quiet bun.lock; then
+            echo "bun.lock already in sync — nothing to do."
+            exit 0
+          fi
+          git config user.name 'dependabot[bot]'
+          git config user.email '49699333+dependabot[bot]@users.noreply.github.com'
+          git add bun.lock
+          git commit -m 'chore(deps): refresh bun.lock'
+          git push

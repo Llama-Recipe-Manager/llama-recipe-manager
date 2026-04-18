@@ -1,21 +1,61 @@
 version: 2
+
+# Notes on the npm ecosystem block:
+#   This project uses Bun (`bun.lock` is the source of truth). Dependabot
+#   has no native Bun support yet — see
+#   https://github.com/dependabot/dependabot-core/issues/10584 — so we let
+#   it parse `package.json` and propose version bumps there. The actual
+#   `bun.lock` refresh happens inside CI via the `dependabot-bun-lock`
+#   workflow (which runs `bun install` and commits the updated lock back
+#   onto the Dependabot branch before review). The stale `package-lock.json`
+#   that used to live at the repo root has been removed and is gitignored,
+#   so Dependabot can no longer touch it.
+
 updates:
   - package-ecosystem: 'cargo'
     directory: '/src-tauri'
     schedule:
       interval: 'weekly'
+      day: 'monday'
     open-pull-requests-limit: 5
     labels: ['dependencies', 'rust']
+    # Group all non-major Rust updates into a single PR per week — major
+    # bumps still get their own PR so breaking changes are reviewed
+    # individually.
+    groups:
+      cargo-minor-and-patch:
+        update-types: ['minor', 'patch']
 
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'monday'
     open-pull-requests-limit: 5
     labels: ['dependencies', 'frontend']
+    # Same grouping rule as cargo: minor + patch in one PR, majors solo.
+    # Splits dev vs runtime so a noisy ESLint/TS bump doesn't share a PR
+    # with a Svelte/Tauri runtime bump.
+    groups:
+      npm-dev-minor-and-patch:
+        dependency-type: 'development'
+        update-types: ['minor', 'patch']
+      npm-prod-minor-and-patch:
+        dependency-type: 'production'
+        update-types: ['minor', 'patch']
+    # Bun isn't an npm package we depend on, but Dependabot occasionally
+    # surfaces oven-sh/bun mirrors via transitive metadata. Ignore them —
+    # the runtime version is pinned in CI workflows, not package.json.
+    ignore:
+      - dependency-name: 'bun'
+      - dependency-name: 'bun-types'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'monthly'
+      day: 'monday'
     labels: ['dependencies', 'ci']
+    groups:
+      actions-minor-and-patch:
+        update-types: ['minor', 'patch']

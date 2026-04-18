@@ -9,6 +9,13 @@ node_modules
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# We use Bun (`bun.lock` is the source of truth). Don't ship npm/yarn/pnpm
+# lockfiles — Dependabot will happily open PRs against any npm-family
+# lockfile it finds, even if no tooling actually reads it.
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Tauri updater signing keys — must never be committed.
 *.key
 *.key.pub
