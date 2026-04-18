@@ -30,19 +30,23 @@ The release artefact lands under
 
 ## Day-to-day commands
 
+Install [`just`](https://github.com/casey/just) for a single command to run everything:
+
+```bash
+just fmt       # prettier + cargo fmt
+just lint      # eslint + cargo clippy
+just check     # svelte-check + clippy + cargo fmt --check
+just test      # vitest + cargo test
+```
+
+Individual commands:
+
 ```bash
 bun run tauri dev          # native dev server with HMR
-bun run check              # svelte-check
-bun run lint               # eslint
-bun run format             # prettier write
-bun run test               # vitest (frontend)
-bun run lint:rust          # cargo clippy -D warnings
-bun run format:rust        # rustfmt
-bun run test:rust          # cargo test (unit + integration)
 bun run icons              # regenerate platform icons from src-tauri/icons/icon.png
 ```
 
-CI runs every one of those on Linux, macOS, and Windows for every PR.
+CI runs every `just` recipe on Linux, macOS, and Windows for every PR.
 
 ## Repository layout
 
@@ -128,21 +132,17 @@ the wrong version under the user's nose.
 
 Pre-flight (on a release branch, or on `main` if you're confident):
 
-1. **Bump versions** in the three files above to the new
-   `MAJOR.MINOR.PATCH` (no leading `v`). Then run
-   `cargo update -p llama-recipe-manager --manifest-path src-tauri/Cargo.toml`
-   to refresh the lockfile.
+1. **Bump versions** — run the bump script which updates all three files,
+   refreshes `Cargo.lock`, and runs the full quality gate in one shot:
+   ```bash
+   python scripts/bump-version.py --patch   # --minor or --major
+   ```
+   If the quality gate fails, fix the issues and re-run the same command.
 2. **Update the changelog.** Move everything from `## [Unreleased]` into
    a new `## [X.Y.Z] — YYYY-MM-DD` section, grouped by `Added` /
    `Changed` / `Fixed` / `Removed` / `Security` (Keep-a-Changelog
    conventions). Leave a fresh empty `## [Unreleased]` block on top.
-3. **Run the full quality gate locally** — CI will catch regressions
-   too, but it's faster to catch them now:
-   ```bash
-   bun run check && bun run lint && bun run test && bun run format:check
-   bun run lint:rust && bun run test:rust && bun run format:rust -- --check
-   ```
-4. **Land the bump on `main`** via PR.
+3. **Land the bump on `main`** via PR.
    Title: `release: vX.Y.Z`. Merge once green.
 
 Cut the release:
