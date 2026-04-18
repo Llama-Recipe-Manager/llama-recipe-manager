@@ -71,7 +71,7 @@ jobs:
             > out/llama-recipe-manager/PKGBUILD
 
       - name: Publish to AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: llama-recipe-manager
           pkgbuild: out/llama-recipe-manager/PKGBUILD
@@ -97,7 +97,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Publish to AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: llama-recipe-manager-git
           pkgbuild: packaging/aur/llama-recipe-manager-git/PKGBUILD

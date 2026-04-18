@@ -6,10 +6,10 @@ The workflow at `.github/workflows/aur.yml` keeps AUR in sync — you should
 
 ## Packages
 
-| AUR package | Source | Updated by |
-| --- | --- | --- |
-| [`llama-recipe-manager`](https://aur.archlinux.org/packages/llama-recipe-manager) | `archive/refs/tags/v$pkgver.tar.gz` (a tagged release) | the `stable` job, on every GitHub Release |
-| [`llama-recipe-manager-git`](https://aur.archlinux.org/packages/llama-recipe-manager-git) | `git+…/llama-recipe-manager.git` (`main`) | the `git` job, on changes to `packaging/aur/**` or manually |
+| AUR package                                                                               | Source                                                 | Updated by                                                  |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| [`llama-recipe-manager`](https://aur.archlinux.org/packages/llama-recipe-manager)         | `archive/refs/tags/v$pkgver.tar.gz` (a tagged release) | the `stable` job, on every GitHub Release                   |
+| [`llama-recipe-manager-git`](https://aur.archlinux.org/packages/llama-recipe-manager-git) | `git+…/llama-recipe-manager.git` (`main`)              | the `git` job, on changes to `packaging/aur/**` or manually |
 
 `llama-recipe-manager-git` provides + conflicts with `llama-recipe-manager`,
 so users pick exactly one.
@@ -29,10 +29,10 @@ so users pick exactly one.
 
 2. **Add three GitHub repository secrets** (Settings → Secrets and variables → Actions):
 
-   | Secret | Value |
-   | --- | --- |
-   | `AUR_USERNAME` | your AUR account username |
-   | `AUR_EMAIL` | the email registered with that account |
+   | Secret                | Value                                                                             |
+   | --------------------- | --------------------------------------------------------------------------------- |
+   | `AUR_USERNAME`        | your AUR account username                                                         |
+   | `AUR_EMAIL`           | the email registered with that account                                            |
    | `AUR_SSH_PRIVATE_KEY` | private half of the SSH key you registered at <https://aur.archlinux.org/account> |
 
 3. Push. Subsequent releases publish automatically.
