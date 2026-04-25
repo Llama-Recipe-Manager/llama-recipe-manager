@@ -114,7 +114,10 @@ pub mod server {
             cmd.creation_flags(CREATE_NO_WINDOW);
         }
 
-        let output = cmd.output().await.map_err(|e| format!("Failed to run '{}': {}", path, e))?;
+        let output = cmd
+            .output()
+            .await
+            .map_err(|e| format!("Failed to run '{}': {}", path, e))?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();

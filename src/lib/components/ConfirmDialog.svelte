@@ -72,10 +72,20 @@
     <h2 id="confirm-title" class="title">{title}</h2>
     <p id="confirm-message" class="message">{message}</p>
     <div class="actions">
-      <button class="btn cancel" data-cancel-btn onclick={onCancel} onmouseenter={() => (focusedButton = 'cancel')}>
+      <button
+        class="btn cancel"
+        data-cancel-btn
+        onclick={onCancel}
+        onmouseenter={() => (focusedButton = 'cancel')}
+      >
         {cancelLabel}
       </button>
-      <button class="btn danger" data-confirm-btn onclick={onConfirm} onmouseenter={() => (focusedButton = 'confirm')}>
+      <button
+        class="btn danger"
+        data-confirm-btn
+        onclick={onConfirm}
+        onmouseenter={() => (focusedButton = 'confirm')}
+      >
         {confirmLabel}
       </button>
     </div>

@@ -63,11 +63,12 @@
 <section class="logs">
   <header class="logs-header">
     <div class="logs-title">
-      <span class="dot" class:live={recipeId ? serverStore.isActive(recipeId) : serverStore.anyRunning()}></span>
+      <span
+        class="dot"
+        class:live={recipeId ? serverStore.isActive(recipeId) : serverStore.anyRunning()}
+      ></span>
       <h3>Logs</h3>
-      <span class="count"
-        >{recipeLogs.length} {recipeLogs.length === 1 ? 'line' : 'lines'}</span
-      >
+      <span class="count">{recipeLogs.length} {recipeLogs.length === 1 ? 'line' : 'lines'}</span>
     </div>
     <div class="logs-actions">
       <input
@@ -81,9 +82,7 @@
         <input type="checkbox" bind:checked={autoScroll} />
         <span>Auto-scroll</span>
       </label>
-      <button class="action" onclick={handleCopy} disabled={recipeLogs.length === 0}>
-        Copy
-      </button>
+      <button class="action" onclick={handleCopy} disabled={recipeLogs.length === 0}> Copy </button>
       <button class="action" onclick={handleClear} disabled={recipeLogs.length === 0}>
         Clear
       </button>
