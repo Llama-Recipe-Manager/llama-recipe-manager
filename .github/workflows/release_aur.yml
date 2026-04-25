@@ -1,0 +1,87 @@
+name: 'Release AUR package'
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number to release (e.g. v0.2.0)'
+        required: true
+
+jobs:
+  aur:
+    name: 'Release AUR package'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: |
+          case "${{ github.event_name }}" in
+            release) VERSION=${{ github.event.release.tag_name }};;
+            workflow_dispatch) VERSION=${{ github.event.inputs.version }};;
+          esac
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download DEB packages
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ steps.get_version.outputs.version }}
+          fileName: '*amd64.deb'
+          out-file-path: ${{ github.workspace }}/debs
+
+      - name: Compute SHA256 sum
+        id: sha256
+        run: |
+          DEB_DIR="${{ github.workspace }}/debs"
+          DEB=$(ls "$DEB_DIR"/*amd64.deb 2>/dev/null | head -1)
+          SHA=$(sha256sum "$DEB" | cut -d ' ' -f 1)
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.AUR_KNOWN_HOSTS }}
+          config: ${{ secrets.AUR_SSH_CONFIG }}
+
+      - name: Clone AUR repo
+        run: |
+          git clone ssh://aur@aur.archlinux.org/llama-recipe-manager.git
+
+      - name: Update PKGBUILD
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          PKGVER="${VERSION#v}"
+
+          # Read pkgrel from existing PKGBUILD or default to 1
+          if [ -f "llama-recipe-manager/PKGBUILD" ]; then
+            OLD_PKGREL=$(grep -E '^pkgrel=' llama-recipe-manager/PKGBUILD | head -1 | cut -d= -f2)
+          else
+            OLD_PKGREL=1
+          fi
+          PKGREL=$((OLD_PKGREL + 1))
+
+          sed -e "s/@PKGVER@/$PKGVER/g" \
+              -e "s/@SHA256_X86_64@/${{ steps.sha256.outputs.sha256 }}/g" \
+              -e "s/^pkgrel=.*/pkgrel=$PKGREL/" \
+              "${{ github.workspace }}/dist/aur/PKGBUILD" \
+              > "llama-recipe-manager/PKGBUILD"
+
+          cp "${{ github.workspace }}/dist/aur/llama-recipe-manager.install" \
+             "llama-recipe-manager/llama-recipe-manager.install"
+
+      - name: Commit and push to AUR
+        run: |
+          cd llama-recipe-manager
+          git config user.email "ashar786khan@gmail.com"
+          git config user.name "coder3101"
+          git add .
+          git commit -m "Update to ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
+          git push -u origin master
