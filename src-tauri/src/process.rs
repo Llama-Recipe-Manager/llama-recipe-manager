@@ -177,14 +177,16 @@ impl ProcessManager {
         // CTRL_BREAK_EVENT to it for a graceful shutdown. Without this flag
         // the child shares our console group (we have none) and would only
         // be killable via TerminateProcess.
+        //
+        // CREATE_NO_WINDOW tells Windows not to create a console window for
+        // this child process — without it, spawning a console-subsystem
+        // binary (like llama-server) from a GUI app causes a brief CMD
+        // window to flash on screen.
         #[cfg(windows)]
         {
-            // `tokio::process::Command` exposes `creation_flags` directly on
-            // Windows — we don't need to pull in `std::os::windows::process::CommandExt`
-            // (doing so trips `unused-imports` since the trait method isn't
-            // actually being resolved through the std trait).
             const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
-            cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            cmd.creation_flags(CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW);
         }
 
         if !settings.hf_token.is_empty() {

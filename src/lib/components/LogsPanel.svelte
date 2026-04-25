@@ -1,18 +1,25 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import { serverStore } from '$lib/stores/server.svelte';
   import { errorMessage } from '$lib/utils/format';
 
-  let { onError }: { onError?: (msg: string) => void } = $props();
+  let { recipeId, onError }: { recipeId?: string; onError?: (msg: string) => void } = $props();
 
   let logContainer = $state<HTMLDivElement | undefined>(undefined);
   let autoScroll = $state(true);
   let filter = $state('');
+  let showClearConfirm = $state(false);
+
+  const recipeLogs = $derived.by(() => {
+    if (!recipeId) return serverStore.logs;
+    return serverStore.logs.filter((l) => l.recipe_id === recipeId);
+  });
 
   const filteredLogs = $derived.by(() => {
-    if (!filter.trim()) return serverStore.logs;
+    if (!filter.trim()) return recipeLogs;
     const q = filter.toLowerCase();
-    return serverStore.logs.filter((l) => l.line.toLowerCase().includes(q));
+    return recipeLogs.filter((l) => l.line.toLowerCase().includes(q));
   });
 
   function onScroll() {
@@ -30,7 +37,12 @@
     }
   });
 
-  async function handleClear() {
+  function handleClear() {
+    showClearConfirm = true;
+  }
+
+  async function confirmClear() {
+    showClearConfirm = false;
     try {
       await serverStore.clearLogs();
       await tick();
@@ -41,7 +53,7 @@
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(serverStore.logs.map((l) => l.line).join('\n'));
+      await navigator.clipboard.writeText(recipeLogs.map((l) => l.line).join('\n'));
     } catch (e) {
       onError?.(errorMessage(e));
     }
@@ -51,10 +63,10 @@
 <section class="logs">
   <header class="logs-header">
     <div class="logs-title">
-      <span class="dot" class:live={serverStore.anyRunning()}></span>
+      <span class="dot" class:live={recipeId ? serverStore.isActive(recipeId) : serverStore.anyRunning()}></span>
       <h3>Logs</h3>
       <span class="count"
-        >{serverStore.logs.length} {serverStore.logs.length === 1 ? 'line' : 'lines'}</span
+        >{recipeLogs.length} {recipeLogs.length === 1 ? 'line' : 'lines'}</span
       >
     </div>
     <div class="logs-actions">
@@ -69,30 +81,40 @@
         <input type="checkbox" bind:checked={autoScroll} />
         <span>Auto-scroll</span>
       </label>
-      <button class="action" onclick={handleCopy} disabled={serverStore.logs.length === 0}>
+      <button class="action" onclick={handleCopy} disabled={recipeLogs.length === 0}>
         Copy
       </button>
-      <button class="action" onclick={handleClear} disabled={serverStore.logs.length === 0}>
+      <button class="action" onclick={handleClear} disabled={recipeLogs.length === 0}>
         Clear
       </button>
     </div>
   </header>
 
   <div class="viewer" bind:this={logContainer} onscroll={onScroll}>
-    {#if serverStore.logs.length === 0}
+    {#if recipeLogs.length === 0}
       <div class="empty">
-        {serverStore.anyRunning()
+        {(recipeId ? serverStore.isActive(recipeId) : serverStore.anyRunning())
           ? 'Waiting for output…'
           : 'No logs yet. Start the server to see output.'}
       </div>
     {:else if filteredLogs.length === 0}
-      <div class="empty">No lines match “{filter}”.</div>
+      <div class="empty">No lines match "{filter}".</div>
     {:else}
       {#each filteredLogs as log, i (i)}
         <div class="line" class:stderr={log.is_stderr}>{log.line}</div>
       {/each}
     {/if}
   </div>
+
+  <ConfirmDialog
+    open={showClearConfirm}
+    title="Clear Logs"
+    message="Clear all server logs? This action cannot be undone."
+    confirmLabel="Clear"
+    cancelLabel="Cancel"
+    onConfirm={confirmClear}
+    onCancel={() => (showClearConfirm = false)}
+  />
 </section>
 
 <style>

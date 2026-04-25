@@ -76,7 +76,7 @@ jobs:
           tagName: ${{ github.event.inputs.tag || github.ref_name }}
           releaseName: 'Llama Recipe Manager ${{ github.event.inputs.tag || github.ref_name }}'
           releaseBody: |
-            See [CHANGELOG.md](https://github.com/coder3101/llama-recipe-manager/blob/main/CHANGELOG.md)
+            See [CHANGELOG.md](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/blob/main/CHANGELOG.md)
             for what changed in this release.
           releaseDraft: true
           prerelease: false

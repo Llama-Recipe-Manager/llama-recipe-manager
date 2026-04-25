@@ -44,7 +44,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/coder3101/llama-recipe-manager/releases/latest/download/latest.json"
+        "https://github.com/Llama-Recipe-Manager/llama-recipe-manager/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJFQjhEQUU5QTcyMDhCMzQKUldRMGl5Q242ZHE0dmxISTVtSHNaZXBXU3RCVUJ0SzNYb1lSaERldzBZaTMxaVVjYXdOVE5RTUkK",
       "windows": {

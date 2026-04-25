@@ -2,6 +2,7 @@
   import { onDestroy } from 'svelte';
   import { openUrl } from '@tauri-apps/plugin-opener';
 
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import LiveStatsPanel from './LiveStatsPanel.svelte';
   import LogsPanel from './LogsPanel.svelte';
   import { deleteRecipe, duplicateRecipe } from '$lib/api';
@@ -79,7 +80,11 @@
       onError('Stop the server before deleting this recipe.');
       return;
     }
-    if (!confirm('Delete this recipe?')) return;
+    showDeleteConfirm = true;
+  }
+
+  async function confirmDelete() {
+    showDeleteConfirm = false;
     try {
       await deleteRecipe(recipe.id);
       await recipesStore.refresh();
@@ -108,6 +113,7 @@
   }
 
   let showFullCommand = $state(false);
+  let showDeleteConfirm = $state(false);
 </script>
 
 <div class="detail-view">
@@ -322,7 +328,17 @@
     <LiveStatsPanel />
   {/if}
 
-  <LogsPanel {onError} />
+  <LogsPanel recipeId={recipe.id} {onError} />
+
+  <ConfirmDialog
+    open={showDeleteConfirm}
+    title="Delete Recipe"
+    message="Are you sure you want to delete this recipe? This action cannot be undone."
+    confirmLabel="Delete"
+    cancelLabel="Cancel"
+    onConfirm={confirmDelete}
+    onCancel={() => (showDeleteConfirm = false)}
+  />
 </div>
 
 <style>

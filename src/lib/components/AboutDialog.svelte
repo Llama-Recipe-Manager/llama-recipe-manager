@@ -16,7 +16,7 @@
     onError: (msg: string) => void;
   } = $props();
 
-  const REPO_URL = 'https://github.com/coder3101/llama-recipe-manager';
+  const REPO_URL = 'https://github.com/Llama-Recipe-Manager/llama-recipe-manager';
 
   let appVersion = $state<string>('');
   let tauriVersion = $state<string>('');
