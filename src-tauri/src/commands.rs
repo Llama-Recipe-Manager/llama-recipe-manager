@@ -103,10 +103,18 @@ pub mod server {
 
         let path = process::expand_tilde_pub(&settings.llama_server_path);
 
-        let output = tokio::process::Command::new(&path)
-            .arg("--version")
+        let mut cmd = tokio::process::Command::new(&path);
+        cmd.arg("--version")
             .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+
+        #[cfg(windows)]
+        {
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+
+        let output = cmd
             .output()
             .await
             .map_err(|e| format!("Failed to run '{}': {}", path, e))?;

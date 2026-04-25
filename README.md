@@ -10,7 +10,7 @@ Save your `llama.cpp` invocations as named _recipes_, switch between them
 in one click, and stop juggling the exact set of flags you settled on for
 each model.
 
-[![CI](https://github.com/coder3101/llama-recipe-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/coder3101/llama-recipe-manager/actions/workflows/ci.yml)
+[![CI](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)](https://tauri.app)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte&logoColor=white)](https://svelte.dev)
@@ -35,11 +35,11 @@ each model.
 ## Install
 
 Pre-built bundles ship on the
-[Releases](https://github.com/coder3101/llama-recipe-manager/releases) page.
+[Releases](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/releases) page.
 To build from source:
 
 ```bash
-git clone https://github.com/coder3101/llama-recipe-manager.git
+git clone https://github.com/Llama-Recipe-Manager/llama-recipe-manager.git
 cd llama-recipe-manager
 bun install
 bun run tauri dev      # development

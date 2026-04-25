@@ -8,7 +8,7 @@ privately so we can fix it before it is widely known.
 
 Use one of:
 
-- GitHub's [private vulnerability reporting](https://github.com/coder3101/llama-recipe-manager/security/advisories/new)
+- GitHub's [private vulnerability reporting](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/security/advisories/new)
   on this repository (preferred).
 - Email the maintainer at <ashar786khan@gmail.com>.
 

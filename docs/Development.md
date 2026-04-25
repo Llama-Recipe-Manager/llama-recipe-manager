@@ -18,7 +18,7 @@ You'll need:
 - On Linux, the [Tauri Linux prerequisites](https://tauri.app/start/prerequisites/#linux)
 
 ```bash
-git clone https://github.com/coder3101/llama-recipe-manager.git
+git clone https://github.com/Llama-Recipe-Manager/llama-recipe-manager.git
 cd llama-recipe-manager
 bun install
 bun run tauri dev      # development with HMR

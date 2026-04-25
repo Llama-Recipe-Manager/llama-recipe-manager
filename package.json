@@ -7,15 +7,15 @@
   "author": {
     "name": "Mohammad Ashar Khan",
     "email": "ashar786khan@gmail.com",
-    "url": "https://github.com/coder3101"
+    "url": "https://github.com/Llama-Recipe-Manager"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/coder3101/llama-recipe-manager.git"
+    "url": "git+https://github.com/Llama-Recipe-Manager/llama-recipe-manager.git"
   },
-  "homepage": "https://github.com/coder3101/llama-recipe-manager#readme",
+  "homepage": "https://github.com/Llama-Recipe-Manager/llama-recipe-manager#readme",
   "bugs": {
-    "url": "https://github.com/coder3101/llama-recipe-manager/issues"
+    "url": "https://github.com/Llama-Recipe-Manager/llama-recipe-manager/issues"
   },
   "type": "module",
   "scripts": {
