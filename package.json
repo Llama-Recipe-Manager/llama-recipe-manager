@@ -1,6 +1,6 @@
 {
   "name": "llama-recipe-manager",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Llama Recipe Manager — manage and launch llama-server recipes",
   "private": true,
   "license": "MIT",
@@ -13,7 +13,7 @@
     "type": "git",
     "url": "git+https://github.com/Llama-Recipe-Manager/llama-recipe-manager.git"
   },
-  "homepage": "https://github.com/Llama-Recipe-Manager/llama-recipe-manager#readme",
+  "homepage": "https://llama-recipe-manager.github.io",
   "bugs": {
     "url": "https://github.com/Llama-Recipe-Manager/llama-recipe-manager/issues"
   },
