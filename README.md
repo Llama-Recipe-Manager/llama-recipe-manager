@@ -4,11 +4,9 @@
 
 # Llama Recipe Manager
 
-**A native, fast, batteries-included desktop launcher for `llama-server`.**
+**A native desktop launcher for `llama-server`.**
 
-Save your `llama.cpp` invocations as named _recipes_, switch between them
-in one click, and stop juggling the exact set of flags you settled on for
-each model.
+Save your `llama.cpp` invocations as named _recipes_, switch between them in one click, stop juggling flags.
 
 [![CI](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
@@ -22,60 +20,32 @@ each model.
 
 ## Highlights
 
-- **Recipe-first workflow.** Each saved recipe is a named bundle of
-  `llama-server` flags — switch models / contexts / GPU layouts in one click.
-- **Local-first.** No account, no telemetry, no network dependency. Recipes
-  live in a SQLite database under your platform's app-data directory.
-- **Safety rails.** A flag deny-list rejects recipe arguments that conflict
-  with app-managed settings; relative model paths are canonicalised and
-  confined to the configured model directory. See [SECURITY.md](./SECURITY.md).
-- **Cross-platform & native.** macOS, Linux, Windows — honours system theme
-  on all three, with platform-correct app icons.
+- **Recipe-first** — named bundles of `llama-server` flags, switch models and GPU layouts in one click
+- **Local-first** — no account, no telemetry, no network dependency. Recipes stored in SQLite
+- **Safety rails** — flag deny-list, path confinement, input validation. See [SECURITY.md](./SECURITY.md)
+- **Cross-platform** — macOS, Linux, Windows with native theming
 
 ## Install
 
-Pre-built bundles ship on the
-[Releases](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/releases) page.
-To build from source:
+Pre-built bundles ship on the [Releases](https://github.com/Llama-Recipe-Manager/llama-recipe-manager/releases) page.
 
 ```bash
 git clone https://github.com/Llama-Recipe-Manager/llama-recipe-manager.git
 cd llama-recipe-manager
 bun install
 bun run tauri dev      # development
-bun run tauri build    # produces an .app / .deb / .AppImage / .msi
+bun run tauri build    # produces .app / .deb / .AppImage / .msi
 ```
 
-Prerequisites and full instructions: see
-[`docs/Development.md`](./docs/Development.md#build-from-source).
-
-## First-run setup
-
-1. Open Settings (gear icon in the nav rail).
-2. Set **llama-server Path** — the chip turns green and shows the version
-   when reachable.
-3. Pick a **Model directory** — the recipe form's file picker defaults here.
-4. (Optional) Set **API key**, **TLS cert/key**, **HF token**, etc.
-   They get applied to every recipe you launch.
-
-Then create your first recipe with the `+` button. Recipe arguments are
-_just_ the flags — host / port / model / mmproj are injected automatically.
+Full build instructions: [`docs/Development.md`](./docs/Development.md)
 
 ## Documentation
 
-- [Development guide](./docs/Development.md) — build, commands, repo layout,
-  app icon regeneration, data locations.
-- [Release process](./docs/Development.md#releasing--auto-update) — version
-  bumps, tag conventions, hotfix flow.
-- [Security policy](./SECURITY.md) — threat model and how to report issues.
-- [Contributing](./CONTRIBUTING.md) — PR workflow, commit style, adding a
-  database migration.
-- [Code of Conduct](./CODE_OF_CONDUCT.md).
-- [Changelog](./CHANGELOG.md).
+- [Development guide](./docs/Development.md) · [Security policy](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
+- [Changelog](./CHANGELOG.md) · [Code of Conduct](./CODE_OF_CONDUCT.md)
 
 ## License
 
-[MIT](./LICENSE) © 2026 Mohammad Ashar Khan.
+[MIT](./LICENSE) © 2026 Mohammad Ashar Khan
 
-Built on top of [llama.cpp](https://github.com/ggml-org/llama.cpp),
-[Tauri](https://tauri.app), and [SvelteKit](https://kit.svelte.dev).
+Built on [llama.cpp](https://github.com/ggml-org/llama.cpp), [Tauri](https://tauri.app), [SvelteKit](https://kit.svelte.dev).
