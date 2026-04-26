@@ -33,9 +33,6 @@ VERSION_FILES = [
     ROOT / "src-tauri/tauri.conf.json",
 ]
 
-AUR_DIR = ROOT / "dist" / "aur"
-AUR_PKGREL_FILE = AUR_DIR / "pkgrel"
-
 CARGO_LOCK = ROOT / "src-tauri/Cargo.lock"
 CARGO_TOML = ROOT / "src-tauri/Cargo.toml"
 
@@ -111,22 +108,6 @@ def update_file_toml(filepath: Path, new_version: str):
     print(f"  Updated {filepath.name}")
 
 
-def read_pkgrel() -> int:
-    """Read current AUR pkgrel, defaulting to 1."""
-    if AUR_PKGREL_FILE.exists():
-        with open(AUR_PKGREL_FILE) as f:
-            return int(f.read().strip())
-    return 1
-
-
-def write_pkgrel(value: int):
-    """Write AUR pkgrel value."""
-    AUR_DIR.mkdir(parents=True, exist_ok=True)
-    with open(AUR_PKGREL_FILE, "w") as f:
-        f.write(str(value))
-    print(f"  Updated AUR pkgrel -> {value}")
-
-
 def update_version_files(old_version: str, new_version: str):
     print(f"\nBumping version: {old_version} -> {new_version}\n")
     print("Updating version files:")
@@ -137,7 +118,6 @@ def update_version_files(old_version: str, new_version: str):
         else:
             update_file_json(fpath, new_version)
 
-    write_pkgrel(1)
     print()
 
 
@@ -216,8 +196,7 @@ def main():
     print(f"Version bump complete: {old_version} -> {new_version}")
     print(f"\nNext steps:")
     print(f"  1. Update the changelog (move Unreleased -> [Unreleased])")
-    print(f"  2. AUR pkgrel reset to 1 (in dist/aur/pkgrel)")
-    print(f"  3. Commit and create PR: 'release: v{new_version}'")
+    print(f"  2. Commit and create PR: 'release: v{new_version}'")
 
 
 if __name__ == "__main__":
