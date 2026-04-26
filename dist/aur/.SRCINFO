@@ -1,7 +1,7 @@
 pkgbase = @PKGNAME@
 	pkgdesc = A native desktop application for managing and launching llama-server with named recipes of command-line flags
 	pkgver = @PKGVER@
-	pkgrel = @PKGREL@
+	pkgrel = 1
 	url = https://github.com/Llama-Recipe-Manager/llama-recipe-manager
 	install = @PKGNAME@.install
 	arch = x86_64
