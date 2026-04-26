@@ -77,6 +77,7 @@ jobs:
           sed -e "s/@PKGVER@/$PKGVER/g" \
               -e "s/@SHA256@/${{ steps.sha256.outputs.sha256 }}/g" \
               -e "s/@PKGREL@/$PKGREL/g" \
+              -e "s/@PKGNAME@/llama-recipe-manager/g" \
               "${{ github.workspace }}/dist/aur/.SRCINFO" \
               > "llama-recipe-manager/.SRCINFO"
 
