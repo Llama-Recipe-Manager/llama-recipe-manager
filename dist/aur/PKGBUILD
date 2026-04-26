@@ -12,7 +12,7 @@ install=${pkgname}.install
 
 source=("https://github.com/Llama-Recipe-Manager/llama-recipe-manager/releases/download/v${pkgver}/Llama.Recipe.Manager_${pkgver}_amd64.deb")
 
-sha256sums=('@SHA256_X86_64@')
+sha256sums=('@SHA256@')
 
 package() {
     tar -xzf data.tar.gz -C "${pkgdir}"

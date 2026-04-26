@@ -55,7 +55,7 @@ jobs:
         run: |
           git clone ssh://aur@aur.archlinux.org/llama-recipe-manager.git
 
-      - name: Update PKGBUILD
+      - name: Update PKGBUILD and .SRCINFO
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           PKGVER="${VERSION#v}"
@@ -69,17 +69,19 @@ jobs:
           PKGREL=$((OLD_PKGREL + 1))
 
           sed -e "s/@PKGVER@/$PKGVER/g" \
-              -e "s/@SHA256_X86_64@/${{ steps.sha256.outputs.sha256 }}/g" \
+              -e "s/@SHA256@/${{ steps.sha256.outputs.sha256 }}/g" \
               -e "s/^pkgrel=.*/pkgrel=$PKGREL/" \
               "${{ github.workspace }}/dist/aur/PKGBUILD" \
               > "llama-recipe-manager/PKGBUILD"
 
-          cp "${{ github.workspace }}/dist/aur/llama-recipe-manager.install" \
-             "llama-recipe-manager/llama-recipe-manager.install"
+          sed -e "s/@PKGVER@/$PKGVER/g" \
+              -e "s/@SHA256@/${{ steps.sha256.outputs.sha256 }}/g" \
+              -e "s/@PKGREL@/$PKGREL/g" \
+              "${{ github.workspace }}/dist/aur/.SRCINFO" \
+              > "llama-recipe-manager/.SRCINFO"
 
-          # Generate .SRCINFO
-          cd llama-recipe-manager
-          makepkg --printsrcinfo > .SRCINFO
+          cp "${{ github.workspace }}/dist/aur/llama-recipe-manager.install" \
+              "llama-recipe-manager/llama-recipe-manager.install"
 
       - name: Commit and push to AUR
         run: |
