@@ -70,6 +70,8 @@ pub struct Settings {
     pub log_verbosity: u8,
     // Lifecycle
     pub keep_server_on_exit: bool,
+    // Appearance
+    pub theme: String,
 }
 
 impl Default for Settings {
@@ -90,6 +92,7 @@ impl Default for Settings {
             timeout_secs: 600,
             log_verbosity: 3,
             keep_server_on_exit: false,
+            theme: "system".to_string(),
         }
     }
 }
@@ -155,6 +158,7 @@ impl Database {
                     }
                 }
                 "keep_server_on_exit" => settings.keep_server_on_exit = value == "1",
+                "theme" => settings.theme = value,
                 _ => {}
             }
         }
@@ -191,6 +195,7 @@ impl Database {
                 "keep_server_on_exit",
                 u8::from(settings.keep_server_on_exit).to_string(),
             ),
+            ("theme", settings.theme.clone()),
         ];
 
         for (key, value) in pairs {

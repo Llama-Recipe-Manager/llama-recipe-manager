@@ -13,9 +13,11 @@
   import SettingsForm from '$lib/components/SettingsForm.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import UpdateBanner from '$lib/components/UpdateBanner.svelte';
+  import { cleanupOrphanParts } from '$lib/api/models';
   import { recipesStore } from '$lib/stores/recipes.svelte';
   import { serverStore } from '$lib/stores/server.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
   import { updaterStore } from '$lib/stores/updater.svelte';
   import type { CommunityFilters, Section, View } from '$lib/types';
   import { errorMessage } from '$lib/utils/format';
@@ -45,6 +47,11 @@
     } catch (e) {
       error = errorMessage(e);
     }
+    // Remove any partial `.gguf.part` files from interrupted downloads.
+    if (settingsStore.current.model_dir.trim()) {
+      cleanupOrphanParts(settingsStore.current.model_dir).catch(() => {});
+    }
+    await themeStore.subscribe();
     await serverStore.subscribe();
 
     // Fire-and-forget update check — failures are surfaced inside the store
