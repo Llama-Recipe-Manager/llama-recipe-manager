@@ -19,6 +19,7 @@ const baseSettings: Settings = {
   timeout_secs: 600,
   log_verbosity: 3,
   keep_server_on_exit: false,
+  theme: 'system',
 };
 
 describe('previewCommand', () => {

@@ -71,6 +71,336 @@ pub mod recipes {
     }
 }
 
+pub mod models {
+    use crate::process;
+    use futures_util::StreamExt;
+    use serde::Serialize;
+    use std::path::PathBuf;
+    use tauri::Emitter;
+    use tokio::fs;
+    use tokio::io::AsyncWriteExt;
+
+    #[derive(Debug, Clone, Serialize)]
+    pub struct ScannedModel {
+        /// Absolute path to the .gguf file.
+        pub path: String,
+        /// File name only (e.g. "qwen3-35b-q4.gguf").
+        pub name: String,
+        /// Size of the file in bytes.
+        pub size_bytes: u64,
+    }
+
+    /// Recursively scan a directory for `.gguf` files using an explicit stack
+    /// to avoid recursive `async fn` (which requires `Box::pin`).
+    async fn collect_gguf_files(root: PathBuf, max_depth: usize) -> Vec<ScannedModel> {
+        let mut results = Vec::new();
+        // Stack of (directory, remaining_depth).
+        let mut stack = vec![(root, max_depth)];
+
+        while let Some((dir, depth)) = stack.pop() {
+            if depth == 0 {
+                continue;
+            }
+
+            let Ok(mut entries) = fs::read_dir(&dir).await else {
+                continue;
+            };
+
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let path = entry.path();
+                let Ok(ft) = fs::metadata(&path).await else {
+                    continue;
+                };
+                if ft.is_dir() {
+                    stack.push((path, depth - 1));
+                } else if path.extension().is_some_and(|ext| ext == "gguf") {
+                    results.push(ScannedModel {
+                        path: path.to_string_lossy().to_string(),
+                        name: path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_default(),
+                        size_bytes: ft.len(),
+                    });
+                }
+            }
+        }
+
+        results
+    }
+
+    /// Remove orphaned `.gguf.part` temp files left by interrupted downloads.
+    #[tauri::command]
+    pub async fn cleanup_orphan_parts(directory: String) -> Result<(), String> {
+        let expanded = process::expand_tilde_pub(&directory);
+        let dir = PathBuf::from(&expanded);
+        if dir.exists() {
+            clean_part_files(&dir).await;
+        }
+        Ok(())
+    }
+
+    #[tauri::command]
+    pub async fn scan_models(directory: String) -> Result<Vec<ScannedModel>, String> {
+        let expanded = process::expand_tilde_pub(&directory);
+        let dir = PathBuf::from(&expanded);
+
+        if !dir.exists() {
+            return Err(format!("Directory does not exist: {}", directory));
+        }
+        if !dir.is_dir() {
+            return Err(format!("Not a directory: {}", directory));
+        }
+
+        Ok(collect_gguf_files(dir, 8).await)
+    }
+
+    // ── HuggingFace model download ──
+
+    #[derive(Debug, Clone, Serialize)]
+    pub struct HfModelFile {
+        pub name: String,
+        pub size_bytes: u64,
+    }
+
+    #[derive(Debug, Clone, Serialize)]
+    pub struct DownloadProgress {
+        pub repo_id: String,
+        pub filename: String,
+        pub bytes_downloaded: u64,
+        pub total_bytes: u64,
+    }
+
+    /// List `.gguf` files available in a HuggingFace model repo.
+    #[tauri::command]
+    pub async fn list_hf_model_files(
+        repo_id: String,
+        hf_token: String,
+    ) -> Result<Vec<HfModelFile>, String> {
+        let url = format!(
+            "https://huggingface.co/api/models/{}/tree/main",
+            repo_id.trim().trim_end_matches('/')
+        );
+
+        let client = reqwest::Client::new();
+        let mut req = client.get(&url);
+        let token = hf_token.trim();
+        if !token.is_empty() {
+            req = req.header("Authorization", format!("Bearer {}", token));
+        }
+
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("Failed to query HF Hub: {}", e))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(format!("HF Hub returned {}: {}", status, body));
+        }
+
+        let entries: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse HF Hub response: {}", e))?;
+
+        let mut files = Vec::new();
+        for entry in entries {
+            let typ = entry["type"].as_str().unwrap_or("");
+            if typ != "file" {
+                continue;
+            }
+            let path = entry["path"].as_str().unwrap_or("");
+            if !std::path::Path::new(path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("gguf"))
+            {
+                continue;
+            }
+            let size = entry["size"].as_u64().unwrap_or(0);
+            files.push(HfModelFile {
+                name: path.to_string(),
+                size_bytes: size,
+            });
+        }
+
+        files.sort_by(|a, b| a.name.cmp(&b.name));
+        Ok(files)
+    }
+
+    /// Clean up orphaned `.gguf.part` files in a directory (leftover from
+    /// interrupted downloads).
+    async fn clean_part_files(dir: &PathBuf) {
+        let Ok(mut entries) = fs::read_dir(dir).await else {
+            return;
+        };
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let path = entry.path();
+            if path.to_string_lossy().ends_with(".gguf.part") {
+                let ft = fs::metadata(&path).await.ok();
+                if ft.is_some_and(|m| m.is_file()) {
+                    let _ = fs::remove_file(&path).await;
+                }
+            }
+        }
+    }
+
+    /// Download a model file from HuggingFace with progress events.
+    ///
+    /// Downloads to a `.gguf.part` temp file first, then atomically renames
+    /// to the final name on success. If the app is killed mid-download the
+    /// orphaned `.part` file will be cleaned up on the next startup scan.
+    #[tauri::command]
+    pub async fn download_hf_model(
+        app_handle: tauri::AppHandle,
+        repo_id: String,
+        filename: String,
+        hf_token: String,
+        dest_dir: String,
+    ) -> Result<String, String> {
+        let expanded_dest = process::expand_tilde_pub(&dest_dir);
+        let dest = PathBuf::from(&expanded_dest);
+
+        // Sanitize filename — prevent path traversal.
+        let fname = PathBuf::from(&filename);
+        let safe_name = fname
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .ok_or_else(|| "Invalid filename".to_string())?;
+
+        let final_path = dest.join(&safe_name);
+        // Download to a `.part` temp file first so a kill mid-download
+        // doesn't leave a corrupt `.gguf` in the model directory.
+        let part_path = dest.join(format!("{}.part", &safe_name));
+
+        // Ensure parent exists.
+        fs::create_dir_all(&dest)
+            .await
+            .map_err(|e| format!("Failed to create download directory: {}", e))?;
+
+        let repo = repo_id.trim().trim_end_matches('/');
+        let url = format!("https://huggingface.co/{}/resolve/main/{}", repo, filename);
+
+        let client = reqwest::Client::new();
+        let mut req = client.get(&url);
+        let token = hf_token.trim();
+        if !token.is_empty() {
+            req = req.header("Authorization", format!("Bearer {}", token));
+        }
+
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("Failed to start download: {}", e))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(format!("Download returned {}: {}", status, body));
+        }
+
+        let total_bytes = resp.content_length().unwrap_or(0);
+
+        // Remove any stale part file from a previous interrupted download.
+        let _ = fs::remove_file(&part_path).await;
+
+        let result: Result<(), String> = async {
+            let mut file = fs::File::create(&part_path)
+                .await
+                .map_err(|e| format!("Failed to create file: {}", e))?;
+
+            let mut bytes_downloaded: u64 = 0;
+            let mut stream = resp.bytes_stream();
+
+            while let Some(chunk_result) = stream.next().await {
+                let chunk = chunk_result.map_err(|e| format!("Download error: {}", e))?;
+                file.write_all(&chunk)
+                    .await
+                    .map_err(|e| format!("Write error: {}", e))?;
+                bytes_downloaded += chunk.len() as u64;
+
+                if total_bytes > 0 {
+                    let _ = app_handle.emit(
+                        "download-progress",
+                        DownloadProgress {
+                            repo_id: repo.to_string(),
+                            filename: safe_name.clone(),
+                            bytes_downloaded,
+                            total_bytes,
+                        },
+                    );
+                }
+            }
+
+            file.flush()
+                .await
+                .map_err(|e| format!("Flush error: {}", e))?;
+
+            // Atomic rename — same filesystem, no partial state visible.
+            fs::rename(&part_path, &final_path)
+                .await
+                .map_err(|e| format!("Failed to finalize download: {}", e))
+        }
+        .await;
+
+        match result {
+            Ok(()) => {
+                let abs_path = final_path
+                    .canonicalize()
+                    .map_err(|e| format!("Failed to resolve download path: {}", e))?
+                    .to_string_lossy()
+                    .to_string();
+                Ok(abs_path)
+            }
+            Err(e) => {
+                // Clean up the partial file on any error.
+                let _ = fs::remove_file(&part_path).await;
+                Err(e)
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use std::path::PathBuf;
+
+        #[test]
+        fn download_sanitizes_path_traversal() {
+            // The download command uses PathBuf::file_name() to prevent
+            // path traversal via malicious filenames from the HF API.
+            let malicious = "../../etc/passwd".to_string();
+            let safe = PathBuf::from(&malicious)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap();
+            assert_eq!(safe, "passwd");
+            assert_ne!(safe, "../../etc/passwd");
+        }
+
+        #[test]
+        fn download_keeps_simple_filename() {
+            let filename = "qwen3-35b-q4.gguf".to_string();
+            let safe = PathBuf::from(&filename)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap();
+            assert_eq!(safe, "qwen3-35b-q4.gguf");
+        }
+
+        #[test]
+        fn download_strips_subdirectory_prefix() {
+            // Some HF repos organize files in subdirectories
+            let filename = "gguf/qwen3-35b-q4.gguf".to_string();
+            let safe = PathBuf::from(&filename)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap();
+            assert_eq!(safe, "qwen3-35b-q4.gguf");
+        }
+    }
+}
+
 pub mod server {
     use serde::Serialize;
 

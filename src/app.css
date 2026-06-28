@@ -96,6 +96,13 @@ select {
   transition: border-color 0.15s;
 }
 
+/* Force the OS-native select popup to match the app's forced theme.
+   Without this, the dropdown stays dark when the system is in dark mode
+   even if the app is forcing light. */
+select {
+  color-scheme: var(--select-color-scheme, light dark);
+}
+
 input:focus,
 textarea:focus,
 select:focus {

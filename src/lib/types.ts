@@ -45,6 +45,8 @@ export interface Settings {
   log_verbosity: number;
   // Lifecycle
   keep_server_on_exit: boolean;
+  // Appearance
+  theme: 'system' | 'light' | 'dark';
 }
 
 export interface ServerStatus {

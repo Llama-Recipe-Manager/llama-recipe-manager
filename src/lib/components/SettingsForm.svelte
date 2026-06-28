@@ -3,6 +3,7 @@
   import ValidatedPathInput from './ValidatedPathInput.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { serverStore } from '$lib/stores/server.svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
   import { errorMessage } from '$lib/utils/format';
 
   let {
@@ -28,6 +29,7 @@
   let timeoutSecs = $state(settingsStore.current.timeout_secs);
   let logVerbosity = $state(settingsStore.current.log_verbosity);
   let keepServerOnExit = $state(settingsStore.current.keep_server_on_exit);
+  let theme = $state(settingsStore.current.theme);
   let saved = $state(false);
 
   $effect(() => {
@@ -53,10 +55,12 @@
         timeout_secs: timeoutSecs,
         log_verbosity: logVerbosity,
         keep_server_on_exit: keepServerOnExit,
+        theme,
       });
       saved = true;
       setTimeout(() => (saved = false), 2000);
       await settingsStore.checkLlamaPath();
+      themeStore.subscribe();
     } catch (e) {
       onError(errorMessage(e));
     }
@@ -235,6 +239,19 @@
         <label for="s-timeout">Timeout (sec)</label>
         <input id="s-timeout" type="number" bind:value={timeoutSecs} min="1" max="86400" />
       </div>
+    </div>
+
+    <h3 class="section-heading">Appearance</h3>
+
+    <div class="theme-selector">
+      {#each ['system', 'light', 'dark'] as option (option)}
+        <label class="theme-option" class:selected={theme === option}>
+          <input type="radio" bind:group={theme} value={option} />
+          <span class="theme-option-label"
+            >{option === 'system' ? 'System' : option === 'light' ? 'Light' : 'Dark'}</span
+          >
+        </label>
+      {/each}
     </div>
 
     <h3 class="section-heading">Lifecycle</h3>
@@ -443,5 +460,44 @@
 
   .btn.secondary:hover {
     background: var(--border);
+  }
+
+  .theme-selector {
+    display: flex;
+    gap: 8px;
+  }
+
+  .theme-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .theme-option:hover {
+    background: var(--bg-secondary);
+  }
+
+  .theme-option.selected {
+    border-color: var(--accent);
+    background: rgba(0, 113, 227, 0.08);
+    color: var(--accent);
+  }
+
+  .theme-option input {
+    display: none;
+  }
+
+  .theme-option-label {
+    text-transform: capitalize;
   }
 </style>
