@@ -4,7 +4,11 @@ import { applyTheme } from '../../src/lib/utils/theme';
 const OG = globalThis.document;
 
 beforeEach(() => {
-  const fake = { setAttribute: vi.fn(), removeAttribute: vi.fn() };
+  const fake = {
+    setAttribute: vi.fn(),
+    removeAttribute: vi.fn(),
+    style: { setProperty: vi.fn() },
+  };
   Object.defineProperty(globalThis, 'document', {
     value: { documentElement: fake },
     writable: true,
@@ -44,6 +48,20 @@ describe('applyTheme', () => {
     expect(globalThis.document.documentElement.setAttribute).toHaveBeenLastCalledWith(
       'data-theme',
       'light',
+    );
+  });
+
+  it('sets --select-color-scheme to match the theme', () => {
+    applyTheme('light');
+    expect(globalThis.document.documentElement.style.setProperty).toHaveBeenCalledWith(
+      '--select-color-scheme',
+      'light',
+    );
+
+    applyTheme('dark');
+    expect(globalThis.document.documentElement.style.setProperty).toHaveBeenCalledWith(
+      '--select-color-scheme',
+      'dark',
     );
   });
 });
