@@ -185,7 +185,10 @@
       <button class="link" onclick={() => openLink(`${REPO_URL}/issues/new/choose`)}>
         Report an issue
       </button>
-      <button class="link" onclick={() => openLink(`${REPO_URL}/blob/main/CHANGELOG.md`)}>
+      <button
+        class="link"
+        onclick={() => openLink('https://llama-recipe-manager.github.io/changelog.html')}
+      >
         Changelog
       </button>
     </div>
