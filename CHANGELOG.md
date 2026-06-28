@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-06-28
+
+### Added
+
+- **Scan models directory**: discover `.gguf` files from the configured model
+  directory with a searchable modal browser. (PR #30)
+- **HuggingFace model download**: browse and download `.gguf` files directly
+  from HF Hub. Real-time progress events, `.part` temp file safety, and
+  orphaned partial cleanup on startup. (PR #30)
+- **Manual theme toggle**: System / Light / Dark selector in Settings,
+  persisted to the database. (PR #30)
+- Theme application extracted into a pure utility function.
+- Rust tests for download filename sanitisation (path traversal prevention).
+- New Rust dependencies: `reqwest` (stream + json), `futures-util`.
+
+### Changed
+
+- Model scanner rewritten from `std::fs` to `tokio::fs` for fully async I/O.
+- Downloads use `.gguf.part` temp files with atomic rename on completion.
+- Frontend tests added for `applyTheme`.
+
+### Fixed
+
+- Theme no longer uses default `"system"` on startup — `themeStore.subscribe()`
+  now runs after `settingsStore.refresh()` finishes loading persisted settings.
+- Orphaned `.gguf.part` files from interrupted downloads are cleaned up on restart.
+
+### Security
+
+- Download filename sanitisation strips directory components to prevent path
+  traversal via malicious HF API filenames.
+
 ## [0.2.0] — 2026-04-26
 
 ### Added
