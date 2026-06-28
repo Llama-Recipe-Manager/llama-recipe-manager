@@ -102,11 +102,15 @@ pub mod models {
                 continue;
             }
 
-            let Ok(mut entries) = fs::read_dir(&dir).await else { continue };
+            let Ok(mut entries) = fs::read_dir(&dir).await else {
+                continue;
+            };
 
             while let Ok(Some(entry)) = entries.next_entry().await {
                 let path = entry.path();
-                let Ok(ft) = fs::metadata(&path).await else { continue };
+                let Ok(ft) = fs::metadata(&path).await else {
+                    continue;
+                };
                 if ft.is_dir() {
                     stack.push((path, depth - 1));
                 } else if path.extension().is_some_and(|ext| ext == "gguf") {
@@ -228,7 +232,9 @@ pub mod models {
     /// Clean up orphaned `.gguf.part` files in a directory (leftover from
     /// interrupted downloads).
     async fn clean_part_files(dir: &PathBuf) {
-        let Ok(mut entries) = fs::read_dir(dir).await else { return };
+        let Ok(mut entries) = fs::read_dir(dir).await else {
+            return;
+        };
         while let Ok(Some(entry)) = entries.next_entry().await {
             let path = entry.path();
             if path.to_string_lossy().ends_with(".gguf.part") {
@@ -274,10 +280,7 @@ pub mod models {
             .map_err(|e| format!("Failed to create download directory: {}", e))?;
 
         let repo = repo_id.trim().trim_end_matches('/');
-        let url = format!(
-            "https://huggingface.co/{}/resolve/main/{}",
-            repo, filename
-        );
+        let url = format!("https://huggingface.co/{}/resolve/main/{}", repo, filename);
 
         let client = reqwest::Client::new();
         let mut req = client.get(&url);
