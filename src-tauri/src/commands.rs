@@ -103,24 +103,23 @@ pub mod models {
     /// mmproj.
     ///
     /// Detection relies on metadata keys only (header-only parse):
-    /// - `general.type` equals `"mmproj"`
-    /// - `general.architecture` contains `"clip"`
+    ///
+    ///  - `general.type` equals `"mmproj"`
+    ///  - `general.architecture` contains `"clip"`
+    ///
     /// If neither matches, the file is treated as a model.
     ///
     /// Only the GGUF header is read — tensor data is never loaded — so this
     /// is fast and uses minimal memory regardless of file size.
     fn detect_gguf_kind(path: &std::path::Path) -> GgufKind {
-        let path_str = match path.to_str() {
-            Some(s) => s,
-            None => return GgufKind::Model,
+        let Some(path_str) = path.to_str() else {
+            return GgufKind::Model;
         };
-        let mut container = match gguf_rs::get_gguf_container(path_str) {
-            Ok(c) => c,
-            Err(_) => return GgufKind::Model,
+        let Ok(mut container) = gguf_rs::get_gguf_container(path_str) else {
+            return GgufKind::Model;
         };
-        let model = match container.decode() {
-            Ok(m) => m,
-            Err(_) => return GgufKind::Model,
+        let Ok(model) = container.decode() else {
+            return GgufKind::Model;
         };
 
         let metadata = model.metadata();

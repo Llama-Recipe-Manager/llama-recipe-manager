@@ -58,12 +58,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div class="backdrop" onclick={onClose}>
-  <div
-    class="browser"
-    onclick={(e) => e.stopPropagation()}
-    role="dialog"
-    aria-label="Browse files"
-  >
+  <div class="browser" onclick={(e) => e.stopPropagation()} role="dialog" aria-label="Browse files">
     <div class="browser-header">
       <h3>Browse {filter === 'mmproj' ? 'mmproj' : 'Model'} Files</h3>
       <button class="btn-icon" onclick={onClose} aria-label="Close">
@@ -103,7 +98,9 @@
         <div class="browser-empty">
           {search
             ? 'No files match your filter.'
-            : showAll ? 'No .gguf files found in this directory.' : `No ${filter === 'mmproj' ? 'mmproj' : 'model'} files found in this directory.`}
+            : showAll
+              ? 'No .gguf files found in this directory.'
+              : `No ${filter === 'mmproj' ? 'mmproj' : 'model'} files found in this directory.`}
         </div>
       {:else}
         <div class="model-list">

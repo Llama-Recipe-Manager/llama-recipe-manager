@@ -9,7 +9,10 @@ export interface ScannedModel {
   kind: GgufKind;
 }
 
-export function scanModels(directory: string, filter: 'model' | 'mmproj' | 'all' = 'model'): Promise<ScannedModel[]> {
+export function scanModels(
+  directory: string,
+  filter: 'model' | 'mmproj' | 'all' = 'model',
+): Promise<ScannedModel[]> {
   return invoke('scan_models', { directory, filter });
 }
 
