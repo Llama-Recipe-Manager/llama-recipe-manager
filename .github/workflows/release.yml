@@ -82,5 +82,5 @@ jobs:
           prerelease: false
           # Emit `latest.json` alongside binaries so the updater plugin can
           # discover new releases via the configured GitHub endpoint.
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
           args: ${{ matrix.args }}
