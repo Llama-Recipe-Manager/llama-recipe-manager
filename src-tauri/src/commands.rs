@@ -102,43 +102,52 @@ pub mod models {
     /// Inspect a GGUF file's header to determine whether it is a model or an
     /// mmproj.
     ///
-    /// Detection relies on metadata keys only:
+    /// Detection relies on metadata keys only (header-only parse):
     /// - `general.type` equals `"mmproj"`
     /// - `general.architecture` contains `"clip"`
     /// If neither matches, the file is treated as a model.
-    fn detect_gguf_kind(path: &std::path::Path) -> GgufKind {
-        let path_str = match path.to_str() {
-            Some(s) => s,
-            None => return GgufKind::Model,
-        };
-        let mut container = match gguf_rs::get_gguf_container(path_str) {
-            Ok(c) => c,
-            Err(_) => return GgufKind::Model,
-        };
-        let model = match container.decode() {
-            Ok(m) => m,
-            Err(_) => return GgufKind::Model,
-        };
+    ///
+    /// The sync GGUF parser is used inside `spawn_blocking` because it only
+    /// reads the header metadata — NOT tensor data — so it's fast and uses
+    /// minimal memory regardless of file size.  The async variant in gguf-rs
+    /// unfortunately reads the entire file into memory (`read_to_end`), which
+    /// would OOM on multi-GB models.
+    async fn detect_gguf_kind(path: &std::path::Path) -> GgufKind {
+        let owned = path.to_owned();
+        tokio::task::spawn_blocking(move || {
+            let path_str = match owned.to_str() {
+                Some(s) => s,
+                None => return GgufKind::Model,
+            };
+            let mut container = match gguf_rs::get_gguf_container(path_str) {
+                Ok(c) => c,
+                Err(_) => return GgufKind::Model,
+            };
+            let model = match container.decode() {
+                Ok(m) => m,
+                Err(_) => return GgufKind::Model,
+            };
 
-        let metadata = model.metadata();
+            let metadata = model.metadata();
 
-        // `general.type` = "mmproj" is the most direct signal.
-        if let Some(val) = metadata.get("general.type") {
-            let s = val.to_string().to_ascii_lowercase();
-            if s.contains("mmproj") {
-                return GgufKind::Mmproj;
+            if let Some(val) = metadata.get("general.type") {
+                let s = val.to_string().to_ascii_lowercase();
+                if s.contains("mmproj") {
+                    return GgufKind::Mmproj;
+                }
             }
-        }
 
-        // CLIP-based vision encoders always use mmproj.
-        if let Some(val) = metadata.get("general.architecture") {
-            let s = val.to_string().to_ascii_lowercase();
-            if s.contains("clip") {
-                return GgufKind::Mmproj;
+            if let Some(val) = metadata.get("general.architecture") {
+                let s = val.to_string().to_ascii_lowercase();
+                if s.contains("clip") {
+                    return GgufKind::Mmproj;
+                }
             }
-        }
 
-        GgufKind::Model
+            GgufKind::Model
+        })
+        .await
+        .unwrap_or(GgufKind::Model)
     }
 
     /// Recursively scan a directory for `.gguf` files using an explicit stack
@@ -168,7 +177,7 @@ pub mod models {
                 if ft.is_dir() {
                     stack.push((path, depth - 1));
                 } else if path.extension().is_some_and(|ext| ext == "gguf") {
-                    let kind = detect_gguf_kind(&path);
+                    let kind = detect_gguf_kind(&path).await;
                     if kind != filter {
                         continue;
                     }
@@ -210,7 +219,7 @@ pub mod models {
                 if ft.is_dir() {
                     stack.push((path, depth - 1));
                 } else if path.extension().is_some_and(|ext| ext == "gguf") {
-                    let kind = detect_gguf_kind(&path);
+                    let kind = detect_gguf_kind(&path).await;
                     results.push(ScannedModel {
                         path: path.to_string_lossy().to_string(),
                         name: path
