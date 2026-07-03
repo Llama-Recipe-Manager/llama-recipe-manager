@@ -64,7 +64,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build & bundle
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Updater signing — set these as repo secrets to enable signed
@@ -82,5 +82,5 @@ jobs:
           prerelease: false
           # Emit `latest.json` alongside binaries so the updater plugin can
           # discover new releases via the configured GitHub endpoint.
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
           args: ${{ matrix.args }}
