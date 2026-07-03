@@ -74,11 +74,18 @@ pub mod recipes {
 pub mod models {
     use crate::process;
     use futures_util::StreamExt;
-    use serde::Serialize;
+    use serde::{Deserialize, Serialize};
     use std::path::PathBuf;
     use tauri::Emitter;
     use tokio::fs;
     use tokio::io::AsyncWriteExt;
+
+    /// Whether a GGUF file is a model, an mmproj, or undetermined.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    pub enum GgufKind {
+        Model,
+        Mmproj,
+    }
 
     #[derive(Debug, Clone, Serialize)]
     pub struct ScannedModel {
@@ -88,13 +95,60 @@ pub mod models {
         pub name: String,
         /// Size of the file in bytes.
         pub size_bytes: u64,
+        /// Detected kind (model or mmproj).
+        pub kind: GgufKind,
+    }
+
+    /// Inspect a GGUF file's header to determine whether it is a model or an
+    /// mmproj.
+    ///
+    /// Detection relies on metadata keys only:
+    /// - `general.type` equals `"mmproj"`
+    /// - `general.architecture` contains `"clip"`
+    /// If neither matches, the file is treated as a model.
+    fn detect_gguf_kind(path: &std::path::Path) -> GgufKind {
+        let path_str = match path.to_str() {
+            Some(s) => s,
+            None => return GgufKind::Model,
+        };
+        let mut container = match gguf_rs::get_gguf_container(path_str) {
+            Ok(c) => c,
+            Err(_) => return GgufKind::Model,
+        };
+        let model = match container.decode() {
+            Ok(m) => m,
+            Err(_) => return GgufKind::Model,
+        };
+
+        let metadata = model.metadata();
+
+        // `general.type` = "mmproj" is the most direct signal.
+        if let Some(val) = metadata.get("general.type") {
+            let s = val.to_string().to_ascii_lowercase();
+            if s.contains("mmproj") {
+                return GgufKind::Mmproj;
+            }
+        }
+
+        // CLIP-based vision encoders always use mmproj.
+        if let Some(val) = metadata.get("general.architecture") {
+            let s = val.to_string().to_ascii_lowercase();
+            if s.contains("clip") {
+                return GgufKind::Mmproj;
+            }
+        }
+
+        GgufKind::Model
     }
 
     /// Recursively scan a directory for `.gguf` files using an explicit stack
     /// to avoid recursive `async fn` (which requires `Box::pin`).
-    async fn collect_gguf_files(root: PathBuf, max_depth: usize) -> Vec<ScannedModel> {
+    async fn collect_gguf_files(
+        root: PathBuf,
+        max_depth: usize,
+        filter: GgufKind,
+    ) -> Vec<ScannedModel> {
         let mut results = Vec::new();
-        // Stack of (directory, remaining_depth).
         let mut stack = vec![(root, max_depth)];
 
         while let Some((dir, depth)) = stack.pop() {
@@ -114,6 +168,10 @@ pub mod models {
                 if ft.is_dir() {
                     stack.push((path, depth - 1));
                 } else if path.extension().is_some_and(|ext| ext == "gguf") {
+                    let kind = detect_gguf_kind(&path);
+                    if kind != filter {
+                        continue;
+                    }
                     results.push(ScannedModel {
                         path: path.to_string_lossy().to_string(),
                         name: path
@@ -121,6 +179,46 @@ pub mod models {
                             .map(|n| n.to_string_lossy().to_string())
                             .unwrap_or_default(),
                         size_bytes: ft.len(),
+                        kind,
+                    });
+                }
+            }
+        }
+
+        results
+    }
+
+    /// Recursively scan a directory for ALL `.gguf` files (no kind filter).
+    async fn collect_all_gguf_files(root: PathBuf, max_depth: usize) -> Vec<ScannedModel> {
+        let mut results = Vec::new();
+        let mut stack = vec![(root, max_depth)];
+
+        while let Some((dir, depth)) = stack.pop() {
+            if depth == 0 {
+                continue;
+            }
+
+            let Ok(mut entries) = fs::read_dir(&dir).await else {
+                continue;
+            };
+
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let path = entry.path();
+                let Ok(ft) = fs::metadata(&path).await else {
+                    continue;
+                };
+                if ft.is_dir() {
+                    stack.push((path, depth - 1));
+                } else if path.extension().is_some_and(|ext| ext == "gguf") {
+                    let kind = detect_gguf_kind(&path);
+                    results.push(ScannedModel {
+                        path: path.to_string_lossy().to_string(),
+                        name: path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_default(),
+                        size_bytes: ft.len(),
+                        kind,
                     });
                 }
             }
@@ -140,8 +238,14 @@ pub mod models {
         Ok(())
     }
 
+    /// Scan a directory for `.gguf` files, optionally filtered by kind.
+    ///
+    /// `filter` must be one of: `"model"`, `"mmproj"`, or `"all"`.
     #[tauri::command]
-    pub async fn scan_models(directory: String) -> Result<Vec<ScannedModel>, String> {
+    pub async fn scan_models(
+        directory: String,
+        filter: String,
+    ) -> Result<Vec<ScannedModel>, String> {
         let expanded = process::expand_tilde_pub(&directory);
         let dir = PathBuf::from(&expanded);
 
@@ -152,7 +256,11 @@ pub mod models {
             return Err(format!("Not a directory: {}", directory));
         }
 
-        Ok(collect_gguf_files(dir, 8).await)
+        match filter.as_str() {
+            "all" => Ok(collect_all_gguf_files(dir, 8).await),
+            "mmproj" => Ok(collect_gguf_files(dir, 8, GgufKind::Mmproj).await),
+            _ => Ok(collect_gguf_files(dir, 8, GgufKind::Model).await),
+        }
     }
 
     // ── HuggingFace model download ──
@@ -171,11 +279,15 @@ pub mod models {
         pub total_bytes: u64,
     }
 
-    /// List `.gguf` files available in a HuggingFace model repo.
+    /// List `.gguf` files available in a HuggingFace model repo, optionally
+    /// filtered by kind.  `filter` must be one of: `"model"`, `"mmproj"`, or
+    /// `"all"`.  Remote files cannot be header-inspected, so we use a filename
+    /// heuristic: files containing `mmproj` are treated as mmproj.
     #[tauri::command]
     pub async fn list_hf_model_files(
         repo_id: String,
         hf_token: String,
+        filter: String,
     ) -> Result<Vec<HfModelFile>, String> {
         let url = format!(
             "https://huggingface.co/api/models/{}/tree/main",
@@ -217,6 +329,14 @@ pub mod models {
                 .is_some_and(|ext| ext.eq_ignore_ascii_case("gguf"))
             {
                 continue;
+            }
+            // Remote filename heuristic.
+            let lower = path.to_ascii_lowercase();
+            let is_mmproj = lower.contains("mmproj");
+            match filter.as_str() {
+                "mmproj" if !is_mmproj => continue,
+                "model" if is_mmproj => continue,
+                _ => {}
             }
             let size = entry["size"].as_u64().unwrap_or(0);
             files.push(HfModelFile {
@@ -367,8 +487,6 @@ pub mod models {
 
         #[test]
         fn download_sanitizes_path_traversal() {
-            // The download command uses PathBuf::file_name() to prevent
-            // path traversal via malicious filenames from the HF API.
             let malicious = "../../etc/passwd".to_string();
             let safe = PathBuf::from(&malicious)
                 .file_name()
@@ -390,7 +508,6 @@ pub mod models {
 
         #[test]
         fn download_strips_subdirectory_prefix() {
-            // Some HF repos organize files in subdirectories
             let filename = "gguf/qwen3-35b-q4.gguf".to_string();
             let safe = PathBuf::from(&filename)
                 .file_name()

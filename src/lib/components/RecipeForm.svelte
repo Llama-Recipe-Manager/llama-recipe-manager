@@ -313,6 +313,7 @@
 
 {#if showModelBrowser}
   <ModelBrowser
+    filter="model"
     directory={settingsStore.current.model_dir}
     onSelect={(path) => {
       modelPath = path;
@@ -324,6 +325,7 @@
 
 {#if showModelDownloader}
   <ModelDownloader
+    filter="model"
     destDir={settingsStore.current.model_dir}
     hfToken={settingsStore.current.hf_token}
     onSelect={(path) => {
@@ -336,6 +338,7 @@
 
 {#if showMmprojBrowser}
   <ModelBrowser
+    filter="mmproj"
     directory={settingsStore.current.model_dir}
     onSelect={(path) => {
       mmprojPath = path;
@@ -347,6 +350,7 @@
 
 {#if showMmprojDownloader}
   <ModelDownloader
+    filter="mmproj"
     destDir={settingsStore.current.model_dir}
     hfToken={settingsStore.current.hf_token}
     onSelect={(path) => {
