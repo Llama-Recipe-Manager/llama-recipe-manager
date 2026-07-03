@@ -103,7 +103,7 @@
         <div class="browser-empty">
           {search
             ? 'No files match your filter.'
-            : 'No .gguf files found in this directory.'}
+            : showAll ? 'No .gguf files found in this directory.' : `No ${filter === 'mmproj' ? 'mmproj' : 'model'} files found in this directory.`}
         </div>
       {:else}
         <div class="model-list">
