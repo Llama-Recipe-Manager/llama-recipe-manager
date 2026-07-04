@@ -12,11 +12,13 @@
     hfToken,
     onSelect,
     onClose,
+    filter = 'model',
   }: {
     destDir: string;
     hfToken: string;
     onSelect: (path: string) => void;
     onClose: () => void;
+    filter: 'model' | 'mmproj';
   } = $props();
 
   let repoId = $state('');
@@ -25,6 +27,7 @@
   let error = $state('');
   let downloading = $state<string | null>(null);
   let progress = $state<DownloadProgress | null>(null);
+  let showAll = $state(false);
 
   let unlisten: (() => void) | null = null;
 
@@ -41,7 +44,7 @@
     error = '';
     files = [];
     try {
-      files = await listHfModelFiles(id, hfToken);
+      files = await listHfModelFiles(id, hfToken, showAll ? 'all' : filter);
       if (files.length === 0) {
         error = 'No .gguf files found in this repository.';
       }
@@ -93,10 +96,10 @@
     class="downloader"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
-    aria-label="Download model from HuggingFace"
+    aria-label="Download from HuggingFace"
   >
     <div class="downloader-header">
-      <h3>Download Model</h3>
+      <h3>Download {filter === 'mmproj' ? 'mmproj' : 'Model'}</h3>
       <button class="btn-icon" onclick={onClose} aria-label="Close">
         <svg
           width="16"
@@ -134,6 +137,11 @@
         </div>
         <span class="form-hint">Enter a HuggingFace model repo that contains .gguf files.</span>
       </div>
+
+      <label class="show-all-label">
+        <input type="checkbox" bind:checked={showAll} />
+        <span>View all ggufs</span>
+      </label>
 
       {#if error}
         <div class="error-msg">{error}</div>
@@ -262,6 +270,21 @@
 
   .repo-input-row input {
     flex: 1;
+  }
+
+  .show-all-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .show-all-label input[type='checkbox'] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent);
   }
 
   .error-msg {

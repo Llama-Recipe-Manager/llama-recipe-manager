@@ -45,6 +45,8 @@
   let tags = $state(initial?.tags ?? '');
   let showModelBrowser = $state(false);
   let showModelDownloader = $state(false);
+  let showMmprojBrowser = $state(false);
+  let showMmprojDownloader = $state(false);
   let formErrors = $state<string[]>([]);
 
   /* svelte-ignore state_referenced_locally */
@@ -195,12 +197,53 @@
         <span>Vision (mmproj)</span>
       </label>
       {#if vision}
-        <div style="margin-top: 6px">
+        <div class="model-path-row" style="margin-top: 6px">
           <FilePickerInput
             bind:value={mmprojPath}
             placeholder="No mmproj file selected"
             defaultPath={settingsStore.current.model_dir || undefined}
           />
+          <button
+            class="btn secondary"
+            onclick={() => (showMmprojBrowser = true)}
+            title="Scan for mmproj files"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+            </svg>
+            Scan
+          </button>
+          <button
+            class="btn secondary"
+            onclick={() => (showMmprojDownloader = true)}
+            title="Download from HuggingFace"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download
+          </button>
         </div>
         <span class="form-hint"
           >Select the mmproj .gguf file for vision. Injected as --mmproj at runtime.</span
@@ -270,6 +313,7 @@
 
 {#if showModelBrowser}
   <ModelBrowser
+    filter="model"
     directory={settingsStore.current.model_dir}
     onSelect={(path) => {
       modelPath = path;
@@ -281,6 +325,7 @@
 
 {#if showModelDownloader}
   <ModelDownloader
+    filter="model"
     destDir={settingsStore.current.model_dir}
     hfToken={settingsStore.current.hf_token}
     onSelect={(path) => {
@@ -288,6 +333,31 @@
       showModelDownloader = false;
     }}
     onClose={() => (showModelDownloader = false)}
+  />
+{/if}
+
+{#if showMmprojBrowser}
+  <ModelBrowser
+    filter="mmproj"
+    directory={settingsStore.current.model_dir}
+    onSelect={(path) => {
+      mmprojPath = path;
+      showMmprojBrowser = false;
+    }}
+    onClose={() => (showMmprojBrowser = false)}
+  />
+{/if}
+
+{#if showMmprojDownloader}
+  <ModelDownloader
+    filter="mmproj"
+    destDir={settingsStore.current.model_dir}
+    hfToken={settingsStore.current.hf_token}
+    onSelect={(path) => {
+      mmprojPath = path;
+      showMmprojDownloader = false;
+    }}
+    onClose={() => (showMmprojDownloader = false)}
   />
 {/if}
 

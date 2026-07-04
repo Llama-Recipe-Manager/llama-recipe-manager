@@ -5,21 +5,24 @@
     directory,
     onSelect,
     onClose,
+    filter = 'model',
   }: {
     directory: string;
     onSelect: (path: string) => void;
     onClose: () => void;
+    filter: 'model' | 'mmproj';
   } = $props();
 
   let models = $state<ScannedModel[]>([]);
   let loading = $state(true);
   let error = $state('');
   let search = $state('');
+  let showAll = $state(false);
 
   $effect(() => {
     loading = true;
     error = '';
-    scanModels(directory)
+    scanModels(directory, showAll ? 'all' : filter)
       .then((m) => {
         models = m;
         loading = false;
@@ -34,6 +37,10 @@
     if (bytes === 0) return '—';
     if (bytes < 1_000_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
     return `${(bytes / 1_000_000_000).toFixed(2)} GB`;
+  }
+
+  function kindLabel(kind: string): string {
+    return kind === 'Mmproj' ? 'mmproj' : 'model';
   }
 
   const filtered = $derived(
@@ -51,14 +58,9 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div class="backdrop" onclick={onClose}>
-  <div
-    class="browser"
-    onclick={(e) => e.stopPropagation()}
-    role="dialog"
-    aria-label="Browse models"
-  >
+  <div class="browser" onclick={(e) => e.stopPropagation()} role="dialog" aria-label="Browse files">
     <div class="browser-header">
-      <h3>Browse Models</h3>
+      <h3>Browse {filter === 'mmproj' ? 'mmproj' : 'Model'} Files</h3>
       <button class="btn-icon" onclick={onClose} aria-label="Close">
         <svg
           width="16"
@@ -77,8 +79,14 @@
 
     <p class="browser-dir">Scanning: <code>{directory}</code></p>
 
-    <div class="browser-search">
-      <input type="text" bind:value={search} placeholder="Filter models…" />
+    <div class="browser-controls">
+      <div class="browser-search">
+        <input type="text" bind:value={search} placeholder="Filter files…" />
+      </div>
+      <label class="show-all-label">
+        <input type="checkbox" bind:checked={showAll} />
+        <span>View all ggufs</span>
+      </label>
     </div>
 
     <div class="browser-body">
@@ -88,13 +96,22 @@
         <div class="browser-error">{error}</div>
       {:else if filtered.length === 0}
         <div class="browser-empty">
-          {search ? 'No models match your filter.' : 'No .gguf files found in this directory.'}
+          {search
+            ? 'No files match your filter.'
+            : showAll
+              ? 'No .gguf files found in this directory.'
+              : `No ${filter === 'mmproj' ? 'mmproj' : 'model'} files found in this directory.`}
         </div>
       {:else}
         <div class="model-list">
           {#each filtered as model (model.path)}
             <button class="model-item" onclick={() => onSelect(model.path)}>
-              <div class="model-item-name">{model.name}</div>
+              <div class="model-item-name">
+                {model.name}
+                <span class="model-item-kind" class:mmproj={model.kind === 'Mmproj'}
+                  >{kindLabel(model.kind)}</span
+                >
+              </div>
               <div class="model-item-path">{model.path}</div>
               <div class="model-item-size">{formatSize(model.size_bytes)}</div>
             </button>
@@ -151,14 +168,37 @@
     color: var(--text-secondary);
   }
 
-  .browser-search {
+  .browser-controls {
     padding: 0 20px 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .browser-search {
+    flex: 1;
   }
 
   .browser-search input {
     width: 100%;
     padding: 7px 12px;
     font-size: 13px;
+  }
+
+  .show-all-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .show-all-label input[type='checkbox'] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent);
   }
 
   .browser-body {
@@ -214,6 +254,25 @@
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .model-item-kind {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+  }
+
+  .model-item-kind.mmproj {
+    background: rgba(128, 90, 213, 0.15);
+    color: #a78bfa;
   }
 
   .model-item-path {
