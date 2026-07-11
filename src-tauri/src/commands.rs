@@ -392,7 +392,7 @@ pub mod models {
         let final_path = dest.join(&safe_name);
         // Download to a `.part` temp file first so a kill mid-download
         // doesn't leave a corrupt `.gguf` in the model directory.
-        let part_path = dest.join(format!("{}.part", &safe_name));
+        let part_path = dest.join(format!("{}.part", safe_name));
 
         // Ensure parent exists.
         fs::create_dir_all(&dest)
