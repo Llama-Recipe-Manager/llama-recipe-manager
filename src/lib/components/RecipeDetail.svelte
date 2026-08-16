@@ -10,6 +10,7 @@
   import { serverStore } from '$lib/stores/server.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import type { Recipe } from '$lib/types';
+  import { copyText } from '$lib/utils/clipboard';
   import { errorMessage, formatDate } from '$lib/utils/format';
   import { previewCommand } from '$lib/utils/preview';
   import { formatUptime, webuiUrl } from '$lib/utils/server';
@@ -39,6 +40,24 @@
   const blockedByOther = $derived(serverStore.anyActive() && !isThisActive);
   const url = $derived(webuiUrl(settingsStore.current));
   const webUiAvailable = $derived(isReady && settingsStore.current.webui_enabled);
+  const launchedCommand = $derived(
+    previewCommand(settingsStore.current, recipe.command, recipe.model_path, recipe.mmproj_path),
+  );
+
+  /** Which element most recently copied to the clipboard ("Copied…" feedback). */
+  let copied: 'endpoint' | 'command' | null = $state(null);
+  let copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  async function handleCopy(value: string, target: 'endpoint' | 'command') {
+    const ok = await copyText(value);
+    if (!ok) {
+      onError('Could not copy to clipboard.');
+      return;
+    }
+    copied = target;
+    if (copyTimer) clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => (copied = null), 1600);
+  }
 
   /** Surface a crash banner when this recipe's last run died unexpectedly. */
   const crashInfo = $derived.by(() => {
@@ -69,6 +88,7 @@
   });
   onDestroy(() => {
     if (timer) clearInterval(timer);
+    if (copyTimer) clearTimeout(copyTimer);
   });
 
   const uptime = $derived(
@@ -238,6 +258,41 @@
       <div class="endpoint">
         <span class="endpoint-label">Endpoint</span>
         <code>{url}</code>
+        <button
+          class="copy-btn"
+          onclick={() => handleCopy(url, 'endpoint')}
+          title={copied === 'endpoint' ? 'Copied!' : 'Copy endpoint URL'}
+          aria-label={copied === 'endpoint' ? 'Endpoint URL copied' : 'Copy endpoint URL'}
+        >
+          {#if copied === 'endpoint'}
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          {:else}
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          {/if}
+        </button>
       </div>
     </div>
 
@@ -316,12 +371,46 @@
 
   <details class="full-cmd" bind:open={showFullCommand}>
     <summary>{showFullCommand ? 'Hide' : 'Show'} full command (as launched)</summary>
-    <pre class="command-block">{previewCommand(
-        settingsStore.current,
-        recipe.command,
-        recipe.model_path,
-        recipe.mmproj_path,
-      )}</pre>
+    <div class="command-copy-row">
+      <button
+        class="copy-btn text"
+        onclick={() => handleCopy(launchedCommand, 'command')}
+        title={copied === 'command' ? 'Copied!' : 'Copy full command'}
+        aria-label={copied === 'command' ? 'Full command copied' : 'Copy full command'}
+      >
+        {#if copied === 'command'}
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Copied
+        {:else}
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
+          Copy
+        {/if}
+      </button>
+    </div>
+    <pre class="command-block">{launchedCommand}</pre>
   </details>
 
   {#if isReady}
@@ -540,6 +629,35 @@
     user-select: text;
   }
 
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 7px;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    transition:
+      background 0.15s,
+      color 0.15s;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .copy-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .copy-btn.text {
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+  }
+
+  .copy-btn.text:hover {
+    color: var(--text-primary);
+  }
+
   .hero-actions {
     display: flex;
     gap: 8px;
@@ -632,6 +750,13 @@
 
   .full-cmd > summary:hover {
     color: var(--text-primary);
+  }
+
+  .command-copy-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+    margin-bottom: 2px;
   }
 
   .command-block {

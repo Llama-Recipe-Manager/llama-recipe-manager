@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { listen } from '@tauri-apps/api/event';
   import {
     listHfModelFiles,
@@ -20,6 +21,14 @@
     onClose: () => void;
     filter: 'model' | 'mmproj';
   } = $props();
+
+  let dialog = $state<HTMLDivElement | undefined>(undefined);
+
+  onMount(() => {
+    // Move focus into the dialog on open so keyboard/screen-reader users land
+    // inside it immediately.
+    dialog?.focus({ preventScroll: true });
+  });
 
   let repoId = $state('');
   let files = $state<HfModelFile[]>([]);
@@ -90,16 +99,20 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="backdrop" onclick={onClose}>
   <div
     class="downloader"
+    bind:this={dialog}
     onclick={(e) => e.stopPropagation()}
     role="dialog"
-    aria-label="Download from HuggingFace"
+    aria-modal="true"
+    aria-labelledby="downloader-title"
+    tabindex="-1"
   >
     <div class="downloader-header">
-      <h3>Download {filter === 'mmproj' ? 'mmproj' : 'Model'}</h3>
+      <h3 id="downloader-title">Download {filter === 'mmproj' ? 'mmproj' : 'Model'}</h3>
       <button class="btn-icon" onclick={onClose} aria-label="Close">
         <svg
           width="16"
