@@ -6,6 +6,7 @@
 
 mod commands;
 pub mod db;
+mod gpu;
 mod process;
 mod state;
 pub mod validate;

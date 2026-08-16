@@ -656,15 +656,9 @@ pub mod models {
 pub mod server {
     use serde::Serialize;
 
+    use crate::gpu::GpuDevice;
     use crate::process::{self, LogLine, ServerStatus};
     use crate::state::AppState;
-
-    #[derive(Debug, Clone, Serialize)]
-    pub struct GpuDevice {
-        pub name: String,
-        pub vram_mib: u64,
-        pub compute_capability: String,
-    }
 
     #[derive(Debug, Clone, Serialize)]
     pub struct LlamaServerInfo {
@@ -705,7 +699,17 @@ pub mod server {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         let combined = format!("{}{}", stderr, stdout);
 
-        Ok(parse_llama_server_info(combined))
+        let mut info = parse_llama_server_info(combined);
+
+        // Prefer vendor/OS GPU tooling (nvidia-smi, rocm-smi/amd-smi,
+        // system_profiler) over the `--version` output, which does not
+        // reliably list devices. Fall back to the llama parse if none found.
+        let tool_devices = crate::gpu::detect_gpu_devices().await;
+        if !tool_devices.is_empty() {
+            info.gpu_devices = tool_devices;
+        }
+
+        Ok(info)
     }
 
     fn parse_llama_server_info(combined: String) -> LlamaServerInfo {
