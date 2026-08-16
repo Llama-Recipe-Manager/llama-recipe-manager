@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-08-16
+
+### Added
+
+- **Model scanner pagination**: the model browser now loads `.gguf` results in
+  pages as you scroll (with a "Load more" fallback button), keeps memory bounded
+  on directories with thousands of models, and shows a loaded/total counter.
+  (PR #48)
+- **Copy-to-clipboard**: the recipe detail view lets you copy the endpoint URL
+  and the full launched command with one click, using a clipboard fallback for
+  older WebViews. (PR #47)
+
+### Changed
+
+- **Accessible dialogs**: the model browser and downloader are now proper modal
+  dialogs (`role="dialog"`, `aria-modal`, initial-focus management), clearing
+  the remaining Svelte accessibility warnings. (PR #47)
+
 ## [0.3.1] — 2026-07-04
 
 ### Added
