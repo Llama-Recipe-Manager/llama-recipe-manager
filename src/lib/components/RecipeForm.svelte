@@ -2,11 +2,12 @@
   import FilePickerInput from './FilePickerInput.svelte';
   import ModelBrowser from './ModelBrowser.svelte';
   import ModelDownloader from './ModelDownloader.svelte';
-  import { createRecipe, updateRecipe } from '$lib/api';
+  import { createRecipe, getLlamaServerInfo, updateRecipe } from '$lib/api';
   import { recipesStore } from '$lib/stores/recipes.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import type { Recipe } from '$lib/types';
   import { errorMessage } from '$lib/utils/format';
+  import { formatGpuDevices } from '$lib/utils/gpuFormat';
   import { previewCommand } from '$lib/utils/preview';
   import { validateCommand } from '$lib/utils/validate';
   import { ALL_GPU_VALUES, GPU_CUSTOM_VALUE, GPU_OPTIONS } from '$lib/utils/gpuOptions';
@@ -53,10 +54,47 @@
   let gpuSelect = $state(
     !gpuInfo ? '' : ALL_GPU_VALUES.includes(gpuInfo) ? gpuInfo : GPU_CUSTOM_VALUE,
   );
+  let detecting = $state(false);
+
+  /** Set `gpuInfo` and keep the dropdown selection in sync. */
+  function applyGpuInfo(value: string) {
+    gpuInfo = value;
+    gpuSelect = !value ? '' : ALL_GPU_VALUES.includes(value) ? value : GPU_CUSTOM_VALUE;
+  }
 
   function onGpuSelectChange() {
     if (gpuSelect !== GPU_CUSTOM_VALUE) {
       gpuInfo = gpuSelect;
+    }
+  }
+
+  // Pre-populate `gpu_info` from hardware detected during settings validation,
+  // but only for brand-new recipes and only if the field is still empty — never
+  // clobber the editable value (e.g. when returning to re-save an edit).
+  $effect(() => {
+    if (mode !== 'new') return;
+    if (gpuInfo) return;
+    const devices = settingsStore.llamaServerInfo?.gpu_devices ?? [];
+    if (devices.length === 0) return;
+    applyGpuInfo(formatGpuDevices(devices));
+  });
+
+  // Re-detect hardware on demand via `llama-server --version` without needing
+  // to visit Settings. Manual edits remain possible after detection.
+  async function detectHardware() {
+    detecting = true;
+    try {
+      const info = await getLlamaServerInfo();
+      const value = formatGpuDevices(info.gpu_devices);
+      if (value) {
+        applyGpuInfo(value);
+      } else {
+        onError('No GPU detected from llama-server. You can type your hardware manually below.');
+      }
+    } catch (e) {
+      onError(errorMessage(e));
+    } finally {
+      detecting = false;
     }
   }
 
@@ -281,7 +319,21 @@
 
     <div class="form-row">
       <div class="form-group flex-1">
-        <label for="gpu_info">GPU / Hardware</label>
+        <div class="label-row">
+          <label for="gpu_info">GPU / Hardware</label>
+          <button
+            class="link-btn"
+            onclick={detectHardware}
+            disabled={detecting}
+            title="Detect hardware by running llama-server --version"
+          >
+            {#if detecting}
+              Detecting…
+            {:else}
+              Detect hardware
+            {/if}
+          </button>
+        </div>
         <select id="gpu_info" bind:value={gpuSelect} onchange={onGpuSelectChange}>
           <option value="">(none)</option>
           {#each GPU_OPTIONS as grp (grp.group)}
@@ -400,6 +452,34 @@
     font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
+  }
+
+  .label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .link-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+    transition:
+      background 0.15s,
+      color 0.15s;
+  }
+
+  .link-btn:hover:not(:disabled) {
+    background: rgba(0, 113, 227, 0.1);
+    color: var(--accent-hover);
+  }
+
+  .link-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .model-path-row {

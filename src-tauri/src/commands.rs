@@ -141,14 +141,30 @@ pub mod models {
         GgufKind::Model
     }
 
-    /// Recursively scan a directory for `.gguf` files using an explicit stack
-    /// to avoid recursive `async fn` (which requires `Box::pin`).
-    async fn collect_gguf_files(
+    /// Walk a directory tree (up to `max_depth` levels deep) collecting `.gguf`
+    /// files, returning the total match count plus only the slice for the
+    /// requested page.
+    ///
+    /// The whole tree is still walked — each `.gguf` header must be inspected
+    /// to determine its kind — but only the requested page is materialized into
+    /// a `Vec`, so memory stays bounded regardless of how many models exist.
+    ///
+    /// `filter` is `None` to match all files, or a specific kind to match only
+    /// those. `page` is 1-based; `page_size` is the max items per page. An
+    /// explicit stack is used to avoid recursive `async fn` (which would
+    /// require `Box::pin`).
+    async fn scan_gguf_files(
         root: PathBuf,
         max_depth: usize,
-        filter: GgufKind,
-    ) -> Vec<ScannedModel> {
-        let mut results = Vec::new();
+        filter: Option<GgufKind>,
+        page: usize,
+        page_size: usize,
+    ) -> (usize, Vec<ScannedModel>) {
+        let mut total = 0usize;
+        let mut page_items = Vec::with_capacity(page_size);
+        let start = (page.saturating_sub(1)) * page_size;
+        let end = start + page_size;
+        // Reuse a single buffer for entry names to avoid re-allocating.
         let mut stack = vec![(root, max_depth)];
 
         while let Some((dir, depth)) = stack.pop() {
@@ -167,12 +183,21 @@ pub mod models {
                 };
                 if ft.is_dir() {
                     stack.push((path, depth - 1));
-                } else if path.extension().is_some_and(|ext| ext == "gguf") {
-                    let kind = detect_gguf_kind(&path);
-                    if kind != filter {
+                    continue;
+                }
+                if path.extension().is_none_or(|ext| ext != "gguf") {
+                    continue;
+                }
+                let kind = detect_gguf_kind(&path);
+                if let Some(expected) = filter {
+                    if kind != expected {
                         continue;
                     }
-                    results.push(ScannedModel {
+                }
+                // 1-based index over the matching files.
+                total += 1;
+                if total > start && total <= end {
+                    page_items.push(ScannedModel {
                         path: path.to_string_lossy().to_string(),
                         name: path
                             .file_name()
@@ -185,46 +210,7 @@ pub mod models {
             }
         }
 
-        results
-    }
-
-    /// Recursively scan a directory for ALL `.gguf` files (no kind filter).
-    async fn collect_all_gguf_files(root: PathBuf, max_depth: usize) -> Vec<ScannedModel> {
-        let mut results = Vec::new();
-        let mut stack = vec![(root, max_depth)];
-
-        while let Some((dir, depth)) = stack.pop() {
-            if depth == 0 {
-                continue;
-            }
-
-            let Ok(mut entries) = fs::read_dir(&dir).await else {
-                continue;
-            };
-
-            while let Ok(Some(entry)) = entries.next_entry().await {
-                let path = entry.path();
-                let Ok(ft) = fs::metadata(&path).await else {
-                    continue;
-                };
-                if ft.is_dir() {
-                    stack.push((path, depth - 1));
-                } else if path.extension().is_some_and(|ext| ext == "gguf") {
-                    let kind = detect_gguf_kind(&path);
-                    results.push(ScannedModel {
-                        path: path.to_string_lossy().to_string(),
-                        name: path
-                            .file_name()
-                            .map(|n| n.to_string_lossy().to_string())
-                            .unwrap_or_default(),
-                        size_bytes: ft.len(),
-                        kind,
-                    });
-                }
-            }
-        }
-
-        results
+        (total, page_items)
     }
 
     /// Remove orphaned `.gguf.part` temp files left by interrupted downloads.
@@ -238,14 +224,31 @@ pub mod models {
         Ok(())
     }
 
-    /// Scan a directory for `.gguf` files, optionally filtered by kind.
+    /// Result of a paginated [`scan_models`] request.
+    #[derive(Debug, Clone, Serialize)]
+    pub struct ModelScanPage {
+        /// The requested page of matching models.
+        pub items: Vec<ScannedModel>,
+        /// Total number of matching models across all pages.
+        pub total: usize,
+        /// 1-based page that `items` belongs to.
+        pub page: usize,
+        /// Number of items returned per page.
+        pub page_size: usize,
+    }
+
+    /// Scan a directory for `.gguf` files, optionally filtered by kind and
+    /// paginated.
     ///
     /// `filter` must be one of: `"model"`, `"mmproj"`, or `"all"`.
+    /// `page` defaults to 1 and `page_size` to 100 (clamped to 1..=1000).
     #[tauri::command]
     pub async fn scan_models(
         directory: String,
         filter: String,
-    ) -> Result<Vec<ScannedModel>, String> {
+        page: Option<usize>,
+        page_size: Option<usize>,
+    ) -> Result<ModelScanPage, String> {
         let expanded = process::expand_tilde_pub(&directory);
         let dir = PathBuf::from(&expanded);
 
@@ -256,11 +259,22 @@ pub mod models {
             return Err(format!("Not a directory: {}", directory));
         }
 
-        match filter.as_str() {
-            "all" => Ok(collect_all_gguf_files(dir, 8).await),
-            "mmproj" => Ok(collect_gguf_files(dir, 8, GgufKind::Mmproj).await),
-            _ => Ok(collect_gguf_files(dir, 8, GgufKind::Model).await),
-        }
+        let page = page.unwrap_or(1).max(1);
+        let page_size = page_size.unwrap_or(100).clamp(1, 1000);
+
+        let filter_kind = match filter.as_str() {
+            "all" => None,
+            "mmproj" => Some(GgufKind::Mmproj),
+            _ => Some(GgufKind::Model),
+        };
+
+        let (total, items) = scan_gguf_files(dir, 8, filter_kind, page, page_size).await;
+        Ok(ModelScanPage {
+            items,
+            total,
+            page,
+            page_size,
+        })
     }
 
     // ── HuggingFace model download ──
@@ -484,6 +498,127 @@ pub mod models {
     #[cfg(test)]
     mod tests {
         use std::path::PathBuf;
+
+        use super::{scan_gguf_files, GgufKind};
+
+        /// Create a temp dir with `count` empty `.gguf` files. Empty files
+        /// aren't parseable as GGUF, so `detect_gguf_kind` classifies them all
+        /// as `Model` — perfect for exercising pagination deterministically.
+        fn temp_dir_with_ggufs(count: usize) -> tempfile::TempDir {
+            let dir = tempfile::tempdir().expect("tempdir");
+            for i in 0..count {
+                let name = format!("model-{}.gguf", i);
+                std::fs::write(dir.path().join(&name), b"x").expect("write gguf");
+            }
+            dir
+        }
+
+        #[test]
+        fn scan_returns_total_across_all_pages() {
+            let dir = temp_dir_with_ggufs(10);
+            let rt = tokio::runtime::Runtime::new().expect("runtime");
+
+            for page in 1..=3 {
+                let (total, items) = rt.block_on(scan_gguf_files(
+                    dir.path().to_path_buf(),
+                    8,
+                    Some(GgufKind::Model),
+                    page,
+                    4,
+                ));
+                assert_eq!(total, 10, "total must be stable across pages");
+                assert!(items.len() <= 4);
+            }
+        }
+
+        #[test]
+        fn scan_pages_cover_every_file_exactly_once() {
+            let dir = temp_dir_with_ggufs(10);
+            let rt = tokio::runtime::Runtime::new().expect("runtime");
+
+            let mut names = Vec::new();
+            let mut seen_total = 0;
+            for page in 1..=3 {
+                let (total, items) = rt.block_on(scan_gguf_files(
+                    dir.path().to_path_buf(),
+                    8,
+                    Some(GgufKind::Model),
+                    page,
+                    4,
+                ));
+                seen_total = total;
+                names.extend(items.iter().map(|m| m.name.clone()));
+            }
+            assert_eq!(seen_total, 10);
+            assert_eq!(names.len(), 10, "each file must appear in exactly one page");
+
+            let expected: Vec<String> = (0..10).map(|i| format!("model-{}.gguf", i)).collect();
+            names.sort();
+            assert_eq!(names, expected);
+        }
+
+        #[test]
+        fn scan_returns_empty_page_when_page_is_out_of_range() {
+            let dir = temp_dir_with_ggufs(10);
+            let rt = tokio::runtime::Runtime::new().expect("runtime");
+
+            let (total, items) = rt.block_on(scan_gguf_files(
+                dir.path().to_path_buf(),
+                8,
+                Some(GgufKind::Model),
+                99,
+                4,
+            ));
+            assert_eq!(total, 10);
+            assert!(items.is_empty());
+        }
+
+        #[test]
+        fn scan_filters_out_non_matching_kinds() {
+            let dir = temp_dir_with_ggufs(5);
+            let rt = tokio::runtime::Runtime::new().expect("runtime");
+
+            // Files are plain (unparseable) so they're all `Model`; ask for
+            // `Mmproj` and confirm none match.
+            let (total, items) = rt.block_on(scan_gguf_files(
+                dir.path().to_path_buf(),
+                8,
+                Some(GgufKind::Mmproj),
+                1,
+                100,
+            ));
+            assert_eq!(total, 0);
+            assert!(items.is_empty());
+        }
+
+        #[test]
+        fn scan_with_no_filter_matches_every_file() {
+            let dir = temp_dir_with_ggufs(4);
+            let rt = tokio::runtime::Runtime::new().expect("runtime");
+
+            let (total, items) =
+                rt.block_on(scan_gguf_files(dir.path().to_path_buf(), 8, None, 1, 100));
+            assert_eq!(total, 4);
+            assert_eq!(items.len(), 4);
+        }
+
+        #[test]
+        fn scan_respects_max_depth() {
+            let dir = tempfile::tempdir().expect("tempdir");
+            std::fs::write(dir.path().join("top.gguf"), b"x").expect("write");
+            std::fs::create_dir(dir.path().join("nested")).expect("mkdir");
+            std::fs::write(dir.path().join("nested/deep.gguf"), b"x").expect("write");
+
+            let rt = tokio::runtime::Runtime::new().expect("runtime");
+            // Depth 1: only the top-level file is reached.
+            let (total, _) =
+                rt.block_on(scan_gguf_files(dir.path().to_path_buf(), 1, None, 1, 100));
+            assert_eq!(total, 1);
+            // Depth 2: both files.
+            let (total2, _) =
+                rt.block_on(scan_gguf_files(dir.path().to_path_buf(), 2, None, 1, 100));
+            assert_eq!(total2, 2);
+        }
 
         #[test]
         fn download_sanitizes_path_traversal() {

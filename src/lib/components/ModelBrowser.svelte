@@ -15,6 +15,7 @@
   } = $props();
 
   let dialog = $state<HTMLDivElement | undefined>(undefined);
+  let body = $state<HTMLDivElement | undefined>(undefined);
 
   onMount(() => {
     // Move focus into the dialog on open so keyboard/screen-reader users land
@@ -23,25 +24,66 @@
     dialog?.focus({ preventScroll: true });
   });
 
+  const PAGE_SIZE = 100;
+
   let models = $state<ScannedModel[]>([]);
+  let total = $state(0);
+  let page = $state(0);
   let loading = $state(true);
+  let loadingMore = $state(false);
   let error = $state('');
   let search = $state('');
   let showAll = $state(false);
 
-  $effect(() => {
-    loading = true;
+  // Monotonic token so a stale in-flight request can never clobber a newer one
+  // (e.g. the user toggles "View all" while a page is still loading).
+  let requestToken = 0;
+
+  async function load(reset: boolean): Promise<void> {
+    if (!reset && (loading || loadingMore)) return;
+    const nextPage = reset ? 1 : page + 1;
+    const token = ++requestToken;
+    if (reset) {
+      loading = true;
+    } else {
+      loadingMore = true;
+    }
     error = '';
-    scanModels(directory, showAll ? 'all' : filter)
-      .then((m) => {
-        models = m;
+    try {
+      const res = await scanModels(directory, showAll ? 'all' : filter, nextPage, PAGE_SIZE);
+      if (token !== requestToken) return; // superseded by a newer request
+      models = reset ? res.items : [...models, ...res.items];
+      total = res.total;
+      page = res.page;
+    } catch (e) {
+      if (token !== requestToken) return;
+      error = String(e);
+    } finally {
+      if (token === requestToken) {
         loading = false;
-      })
-      .catch((e: unknown) => {
-        error = String(e);
-        loading = false;
-      });
+        loadingMore = false;
+      }
+    }
+  }
+
+  // Reload from page 1 whenever the scan inputs change.
+  $effect(() => {
+    void directory;
+    void showAll;
+    void filter;
+    void load(true);
   });
+
+  const hasMore = $derived(!error && !loading && models.length < total);
+
+  // Load the next page when the user scrolls near the bottom of the list.
+  function onScroll() {
+    if (!body || !hasMore) return;
+    const { scrollTop, scrollHeight, clientHeight } = body;
+    if (scrollHeight - (scrollTop + clientHeight) < 120) {
+      void load(false);
+    }
+  }
 
   function formatSize(bytes: number): string {
     if (bytes === 0) return '—';
@@ -79,7 +121,14 @@
     tabindex="-1"
   >
     <div class="browser-header">
-      <h3 id="browser-title">Browse {filter === 'mmproj' ? 'mmproj' : 'Model'} Files</h3>
+      <h3 id="browser-title">
+        Browse {filter === 'mmproj' ? 'mmproj' : 'Model'} Files
+        {#if !loading && !error}
+          <span class="browser-count"
+            >({models.length}{total > models.length ? ` / ${total}` : ''})</span
+          >
+        {/if}
+      </h3>
       <button class="btn-icon" onclick={onClose} aria-label="Close">
         <svg
           width="16"
@@ -108,7 +157,7 @@
       </label>
     </div>
 
-    <div class="browser-body">
+    <div class="browser-body" bind:this={body} onscroll={onScroll}>
       {#if loading}
         <div class="browser-empty">Scanning directory…</div>
       {:else if error}
@@ -138,6 +187,18 @@
         </div>
       {/if}
     </div>
+
+    {#if hasMore}
+      <div class="browser-footer">
+        {#if loadingMore}
+          <span class="loading-more">Loading more…</span>
+        {:else}
+          <button class="load-more" onclick={() => load(false)}>
+            Load more ({total - models.length} remaining)
+          </button>
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -174,6 +235,13 @@
   .browser-header h3 {
     font-size: 16px;
     font-weight: 700;
+  }
+
+  .browser-count {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
   }
 
   .browser-dir {
@@ -223,9 +291,36 @@
   .browser-body {
     flex: 1;
     overflow-y: auto;
-    padding: 0 20px 16px;
+    padding: 0 20px;
     min-height: 200px;
     max-height: 400px;
+  }
+
+  .browser-footer {
+    padding: 10px 20px 16px;
+    text-align: center;
+  }
+
+  .load-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 18px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+
+  .load-more:hover {
+    background: var(--border);
+  }
+
+  .loading-more {
+    font-size: 12px;
+    color: var(--text-tertiary);
   }
 
   .browser-empty,
