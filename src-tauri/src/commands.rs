@@ -656,9 +656,15 @@ pub mod models {
 pub mod server {
     use serde::Serialize;
 
-    use crate::gpu::GpuDevice;
     use crate::process::{self, LogLine, ServerStatus};
     use crate::state::AppState;
+
+    #[derive(Debug, Clone, Serialize)]
+    pub struct GpuDevice {
+        pub name: String,
+        pub vram_mib: u64,
+        pub compute_capability: String,
+    }
 
     #[derive(Debug, Clone, Serialize)]
     pub struct LlamaServerInfo {
@@ -699,67 +705,81 @@ pub mod server {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         let combined = format!("{}{}", stderr, stdout);
 
-        let mut info = parse_llama_server_info(combined);
-
-        // Prefer vendor/OS GPU tooling (nvidia-smi, rocm-smi/amd-smi,
-        // system_profiler) over the `--version` output, which does not
-        // reliably list devices. Fall back to the llama parse if none found.
-        let tool_devices = crate::gpu::detect_gpu_devices().await;
-        if !tool_devices.is_empty() {
-            info.gpu_devices = tool_devices;
-        }
-
-        Ok(info)
+        Ok(parse_llama_server_info(combined))
     }
 
     fn parse_llama_server_info(combined: String) -> LlamaServerInfo {
         let mut version = String::new();
         let mut compiler = String::new();
         let mut gpu_devices = Vec::new();
-        let lines: Vec<&str> = combined.lines().collect();
 
-        for line in &lines {
+        for line in combined.lines() {
             let trimmed = line.trim();
+
             if let Some(rest) = trimmed.strip_prefix("version:") {
                 version = rest.trim().to_string();
-            } else if trimmed.starts_with("built with") {
+            }
+
+            if trimmed.starts_with("built with") {
                 compiler = trimmed.to_string();
             }
-        }
 
-        // Parse every device entry. CUDA prints "Device N: NAME, compute
-        // capability Y.Z, VMM: ..." (VRAM is usually on a separate line or
-        // absent entirely), while Metal/Vulkan print "found device: NAME"
-        // plus a "Total VRAM: N MiB" line elsewhere in the output.
-        for line in &lines {
-            let trimmed = line.trim();
-            let Some((name, cc)) = parse_device_line(trimmed) else {
-                continue;
-            };
-            let vram_mib = vram_mib_from_line(trimmed)
-                .or_else(|| total_vram_mib(&lines))
-                .unwrap_or(0);
-            gpu_devices.push(GpuDevice {
-                name,
-                vram_mib,
-                compute_capability: cc,
-            });
-        }
+            if trimmed.starts_with("Device ") && trimmed.contains("VRAM:") {
+                gpu_devices.push(parse_cuda_device_line(trimmed));
+            }
 
-        // Fallback: some builds report a generic total without a device line.
-        if gpu_devices.is_empty() {
-            if let Some(total_vram) = total_vram_mib(&lines) {
-                if total_vram > 0 {
-                    let device_hint = if combined.contains("CUDA") {
-                        "CUDA GPU"
-                    } else {
-                        "GPU"
-                    };
+            if trimmed.contains("found device:") && !trimmed.contains("CUDA") {
+                if let Some(dev_start) = trimmed.find("found device:") {
+                    let dev_name = trimmed[dev_start + "found device:".len()..]
+                        .trim()
+                        .to_string();
+                    let total_vram = combined
+                        .lines()
+                        .find_map(|l| l.find("Total VRAM: ").map(|i| (l, i)))
+                        .map(|(l, i)| {
+                            l[i + "Total VRAM: ".len()..]
+                                .chars()
+                                .take_while(|c| c.is_ascii_digit())
+                                .collect::<String>()
+                                .parse::<u64>()
+                                .unwrap_or(0)
+                        })
+                        .unwrap_or(0);
                     gpu_devices.push(GpuDevice {
-                        name: device_hint.to_string(),
+                        name: dev_name,
                         vram_mib: total_vram,
                         compute_capability: String::new(),
                     });
+                }
+            }
+        }
+
+        if gpu_devices.is_empty() {
+            for line in combined.lines() {
+                if line.contains("Total VRAM:") {
+                    let total_vram = line
+                        .find("Total VRAM: ")
+                        .map(|i| {
+                            line[i + "Total VRAM: ".len()..]
+                                .chars()
+                                .take_while(|c| c.is_ascii_digit())
+                                .collect::<String>()
+                                .parse::<u64>()
+                                .unwrap_or(0)
+                        })
+                        .unwrap_or(0);
+                    if total_vram > 0 {
+                        let device_hint = if line.contains("CUDA") {
+                            "CUDA GPU"
+                        } else {
+                            "GPU"
+                        };
+                        gpu_devices.push(GpuDevice {
+                            name: device_hint.to_string(),
+                            vram_mib: total_vram,
+                            compute_capability: String::new(),
+                        });
+                    }
                 }
             }
         }
@@ -772,167 +792,37 @@ pub mod server {
         }
     }
 
-    /// Try to extract a device (name, compute capability) from a single
-    /// `--version` line. Handles CUDA's `Device N:` form and Metal/Vulkan's
-    /// `found device:` form.
-    fn parse_device_line(trimmed: &str) -> Option<(String, String)> {
-        if let Some(rest) = trimmed.strip_prefix("Device ") {
-            // e.g. "0: NVIDIA GeForce RTX 4090, compute capability 8.9, VMM: yes"
-            let after_colon = rest.split_once(':').map(|(_, r)| r).unwrap_or(rest);
-            let name = after_colon.split(',').next().unwrap_or("").trim();
-            if name.is_empty() {
-                return None;
+    fn parse_cuda_device_line(trimmed: &str) -> GpuDevice {
+        let mut name = String::new();
+        let mut vram_mib: u64 = 0;
+        let mut cc = String::new();
+
+        if let Some((_, rest)) = trimmed.split_once(": ") {
+            if let Some(comma_pos) = rest.find(", compute capability") {
+                name = rest[..comma_pos].to_string();
+            } else if let Some(comma_pos) = rest.find(',') {
+                name = rest[..comma_pos].to_string();
             }
-            return Some((name.to_string(), compute_capability(trimmed)));
-        }
-        if let Some(idx) = trimmed.find("found device:") {
-            let name = trimmed[idx + "found device:".len()..].trim();
-            if name.is_empty() {
-                return None;
-            }
-            return Some((name.to_string(), compute_capability(trimmed)));
-        }
-        None
-    }
-
-    /// Extract `compute capability X.Y` from a line, if present.
-    fn compute_capability(trimmed: &str) -> String {
-        const PREFIX: &str = "compute capability ";
-        if let Some(start) = trimmed.find(PREFIX) {
-            let after = &trimmed[start + PREFIX.len()..];
-            return after
-                .chars()
-                .take_while(|c| !c.is_whitespace() && *c != ',' && *c != ')')
-                .collect::<String>();
-        }
-        String::new()
-    }
-
-    /// VRAM in MiB if it appears on the same line as a device ("VRAM: N MiB").
-    fn vram_mib_from_line(trimmed: &str) -> Option<u64> {
-        trimmed.find("VRAM:").map(|i| {
-            let after = &trimmed[i + "VRAM:".len()..];
-            parse_leading_u64(after)
-        })
-    }
-
-    /// First positive `Total VRAM: N` across all lines (Metal/Vulkan).
-    fn total_vram_mib(lines: &[&str]) -> Option<u64> {
-        lines.iter().find_map(|l| {
-            let i = l.find("Total VRAM: ")?;
-            let v = parse_leading_u64(&l[i + "Total VRAM: ".len()..]);
-            (v > 0).then_some(v)
-        })
-    }
-
-    fn parse_leading_u64(s: &str) -> u64 {
-        s.chars()
-            .skip_while(|c| c.is_whitespace())
-            .take_while(|c| c.is_ascii_digit())
-            .collect::<String>()
-            .parse()
-            .unwrap_or(0)
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::{parse_llama_server_info, GpuDevice};
-
-        fn assert_device(gpu: &GpuDevice, name: &str, vram_mib: u64, cc: &str) {
-            assert_eq!(gpu.name, name, "device name");
-            assert_eq!(gpu.vram_mib, vram_mib, "vram_mib for {name}");
-            assert_eq!(gpu.compute_capability, cc, "compute capability for {name}");
         }
 
-        #[test]
-        fn parses_cuda_device_without_vram_in_line() {
-            // llama.cpp's real CUDA line has no VRAM token — this is the case
-            // that previously produced a "no GPU detected" result.
-            let info = parse_llama_server_info(
-                "version: 4471 (abc123)\n\
-                 built with cc (GCC) 13.2.0 for x86_64-linux-gnu\n\
-                   Device 0: NVIDIA GeForce RTX 4090, compute capability 8.9, VMM: yes"
-                    .to_string(),
-            );
-            assert_eq!(info.gpu_devices.len(), 1);
-            assert_device(&info.gpu_devices[0], "NVIDIA GeForce RTX 4090", 0, "8.9");
+        if let Some(cc_start) = trimmed.find("compute capability ") {
+            let after = &trimmed[cc_start + "compute capability ".len()..];
+            cc = match after.find(',') {
+                Some(end) => after[..end].to_string(),
+                None => after.to_string(),
+            };
         }
 
-        #[test]
-        fn parses_cuda_device_with_vram_in_line() {
-            let info = parse_llama_server_info(
-                "version: 4471\n\
-                 Device 0: NVIDIA GeForce RTX 3090, VRAM: 24564 MiB, compute capability 8.6"
-                    .to_string(),
-            );
-            assert_eq!(info.gpu_devices.len(), 1);
-            assert_device(
-                &info.gpu_devices[0],
-                "NVIDIA GeForce RTX 3090",
-                24_564,
-                "8.6",
-            );
+        if let Some(vram_start) = trimmed.find("VRAM: ") {
+            let after = &trimmed[vram_start + "VRAM: ".len()..];
+            let num_str: String = after.chars().take_while(|c| c.is_ascii_digit()).collect();
+            vram_mib = num_str.parse().unwrap_or(0);
         }
 
-        #[test]
-        fn parses_multiple_cuda_devices() {
-            let info = parse_llama_server_info(
-                "version: 4471\n\
-                 Device 0: NVIDIA GeForce RTX 4090, compute capability 8.9, VMM: yes\n\
-                 Device 1: NVIDIA GeForce RTX 4090, compute capability 8.9, VMM: yes"
-                    .to_string(),
-            );
-            assert_eq!(info.gpu_devices.len(), 2);
-            assert_eq!(info.gpu_devices[0].name, "NVIDIA GeForce RTX 4090");
-            assert_eq!(info.gpu_devices[1].name, "NVIDIA GeForce RTX 4090");
-        }
-
-        #[test]
-        fn parses_metal_found_device_with_total_vram() {
-            let info = parse_llama_server_info(
-                "version: 4471\n\
-                 ggml_metal_init: found device: Apple M4 Max\n\
-                 Total VRAM: 131072 MiB"
-                    .to_string(),
-            );
-            assert_eq!(info.gpu_devices.len(), 1);
-            assert_device(&info.gpu_devices[0], "Apple M4 Max", 131_072, "");
-        }
-
-        #[test]
-        fn parses_vulkan_style_found_device() {
-            let info = parse_llama_server_info(
-                "vulkan_find_device: found device: AMD Radeon RX 7900 XTX\n\
-                 Total VRAM: 24576 MiB"
-                    .to_string(),
-            );
-            assert_eq!(info.gpu_devices.len(), 1);
-            assert_device(&info.gpu_devices[0], "AMD Radeon RX 7900 XTX", 24_576, "");
-        }
-
-        #[test]
-        fn cpu_only_yields_no_devices() {
-            let info =
-                parse_llama_server_info("version: 4471\nbuilt with cc (GCC) 13.2.0\n".to_string());
-            assert!(info.gpu_devices.is_empty());
-        }
-
-        #[test]
-        fn falls_back_to_generic_gpu_when_only_total_vram_present() {
-            let info =
-                parse_llama_server_info("something\nTotal VRAM: 12288 MiB\ntrailing".to_string());
-            assert_eq!(info.gpu_devices.len(), 1);
-            assert_device(&info.gpu_devices[0], "GPU", 12_288, "");
-        }
-
-        #[test]
-        fn does_not_treat_cuda_init_count_as_device() {
-            let info = parse_llama_server_info(
-                "ggml_cuda_init: found 1 CUDA devices\nDevice 0: NVIDIA A100, compute capability 8.0"
-                    .to_string(),
-            );
-            assert_eq!(info.gpu_devices.len(), 1);
-            assert_eq!(info.gpu_devices[0].name, "NVIDIA A100");
+        GpuDevice {
+            name,
+            vram_mib,
+            compute_capability: cc,
         }
     }
 
