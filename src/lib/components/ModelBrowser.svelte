@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { scanModels, type ScannedModel } from '$lib/api/models';
 
   let {
@@ -12,6 +13,15 @@
     onClose: () => void;
     filter: 'model' | 'mmproj';
   } = $props();
+
+  let dialog = $state<HTMLDivElement | undefined>(undefined);
+
+  onMount(() => {
+    // Move focus into the dialog on open so keyboard/screen-reader users land
+    // inside it immediately. Restoring focus to the trigger happens naturally
+    // when the component is destroyed below it in the DOM tree.
+    dialog?.focus({ preventScroll: true });
+  });
 
   let models = $state<ScannedModel[]>([]);
   let loading = $state(true);
@@ -56,11 +66,20 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="backdrop" onclick={onClose}>
-  <div class="browser" onclick={(e) => e.stopPropagation()} role="dialog" aria-label="Browse files">
+  <div
+    class="browser"
+    bind:this={dialog}
+    onclick={(e) => e.stopPropagation()}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="browser-title"
+    tabindex="-1"
+  >
     <div class="browser-header">
-      <h3>Browse {filter === 'mmproj' ? 'mmproj' : 'Model'} Files</h3>
+      <h3 id="browser-title">Browse {filter === 'mmproj' ? 'mmproj' : 'Model'} Files</h3>
       <button class="btn-icon" onclick={onClose} aria-label="Close">
         <svg
           width="16"
