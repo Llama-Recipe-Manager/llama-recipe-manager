@@ -11,7 +11,26 @@ version: 2
 #   that used to live at the repo root has been removed and is gitignored,
 #   so Dependabot can no longer touch it.
 
+# Tauri's CLI refuses to run when the Rust crates and npm packages drift
+# apart by minor version, so both sides are bumped together in one PR.
+multi-ecosystem-groups:
+  tauri:
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    labels: ['dependencies', 'rust', 'frontend']
+
 updates:
+  - package-ecosystem: 'cargo'
+    directory: '/src-tauri'
+    patterns: ['tauri', 'tauri-*']
+    multi-ecosystem-group: 'tauri'
+
+  - package-ecosystem: 'npm'
+    directory: '/'
+    patterns: ['@tauri-apps/*']
+    multi-ecosystem-group: 'tauri'
+
   - package-ecosystem: 'cargo'
     directory: '/src-tauri'
     schedule:
@@ -25,6 +44,9 @@ updates:
     groups:
       cargo-minor-and-patch:
         update-types: ['minor', 'patch']
+    ignore:
+      - dependency-name: 'tauri'
+      - dependency-name: 'tauri-*'
 
   - package-ecosystem: 'npm'
     directory: '/'
@@ -49,6 +71,7 @@ updates:
     # surfaces oven-sh/bun mirrors via transitive metadata. Ignore them —
     # the runtime version is pinned in CI workflows, not package.json.
     ignore:
+      - dependency-name: '@tauri-apps/*'
       - dependency-name: 'bun'
       - dependency-name: 'bun-types'
       # TS 7 (native compiler) has no JS API yet; svelte-check and
