@@ -37,6 +37,8 @@ updates:
     # Splits dev vs runtime so a noisy ESLint/TS bump doesn't share a PR
     # with a Svelte/Tauri runtime bump.
     groups:
+      vitest:
+        patterns: ['vitest', '@vitest/*']
       npm-dev-minor-and-patch:
         dependency-type: 'development'
         update-types: ['minor', 'patch']
