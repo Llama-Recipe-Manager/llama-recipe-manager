@@ -5,12 +5,13 @@
 
 pub mod settings {
     use crate::db::Settings;
+    use crate::secrets::{self, Keychain};
     use crate::state::AppState;
 
     #[tauri::command]
     pub fn get_settings(state: tauri::State<AppState>) -> Result<Settings, String> {
         let db = state.db.lock().map_err(|e| e.to_string())?;
-        db.get_settings()
+        secrets::load(&db, &Keychain)
     }
 
     #[tauri::command]
@@ -19,8 +20,8 @@ pub mod settings {
         settings: Settings,
     ) -> Result<Settings, String> {
         let db = state.db.lock().map_err(|e| e.to_string())?;
-        db.update_settings(&settings)?;
-        db.get_settings()
+        secrets::save(&db, &Keychain, &settings)?;
+        secrets::load(&db, &Keychain)
     }
 }
 
@@ -760,6 +761,7 @@ pub mod server {
     use serde::Serialize;
 
     use crate::process::{self, LogLine, ServerStatus};
+    use crate::secrets;
     use crate::state::AppState;
 
     #[derive(Debug, Clone, Serialize)]
@@ -937,7 +939,10 @@ pub mod server {
     ) -> Result<(), String> {
         let (recipe, settings) = {
             let db = state.db.lock().map_err(|e| e.to_string())?;
-            (db.get_recipe(&recipe_id)?, db.get_settings()?)
+            (
+                db.get_recipe(&recipe_id)?,
+                secrets::load(&db, &secrets::Keychain)?,
+            )
         };
         crate::validate::validate_recipe_command(&recipe.command)?;
         state

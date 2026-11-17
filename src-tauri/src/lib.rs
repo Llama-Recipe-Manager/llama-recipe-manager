@@ -8,6 +8,7 @@ mod commands;
 pub mod db;
 mod process;
 mod ripe;
+mod secrets;
 mod state;
 pub mod validate;
 
