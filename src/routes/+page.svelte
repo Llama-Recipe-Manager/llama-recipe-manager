@@ -21,8 +21,10 @@
   import { themeStore } from '$lib/stores/theme.svelte';
   import { updaterStore } from '$lib/stores/updater.svelte';
   import type { CommunityFilters, Recipe, Section, View } from '$lib/types';
+  import { createTray, showMainWindow } from '$lib/tray';
   import { errorMessage } from '$lib/utils/format';
   import { exportRecipeToFile, importRecipeFromFile } from '$lib/utils/ripe';
+  import { trayStatus } from '$lib/utils/tray';
 
   let section = $state<Section>('recipes');
   let view = $state<View>('list');
@@ -43,8 +45,61 @@
   const isServerRunning = $derived(serverStore.anyRunning());
 
   let unlistenClose: (() => void) | null = null;
+  let tray = $state.raw<Awaited<ReturnType<typeof createTray>> | null>(null);
+  let lastStartedId = $state<string | null>(null);
+
+  $effect(() => {
+    const id = serverStore.runningRecipeId();
+    if (id) lastStartedId = id;
+  });
+
+  $effect(() => {
+    if (!tray) return;
+    const runningId = serverStore.runningRecipeId();
+    const phase = serverStore.phase;
+    const targetId = runningId ?? lastStartedId ?? selected?.id ?? null;
+    const target = recipesStore.items.find((r) => r.id === targetId) ?? null;
+    tray.update({
+      status: trayStatus(phase, target?.name ?? null),
+      action: runningId
+        ? {
+            text: phase === 'starting' ? 'Cancel start' : 'Stop server',
+            enabled: phase !== 'stopping',
+            run: () => void stopFromTray(),
+          }
+        : target
+          ? {
+              text: `Start ${target.name}`,
+              enabled: true,
+              run: () => void startFromTray(target.id),
+            }
+          : null,
+    });
+  });
+
+  async function startFromTray(id: string) {
+    error = '';
+    try {
+      await serverStore.start(id);
+    } catch (e) {
+      error = errorMessage(e);
+      await showMainWindow();
+    }
+  }
+
+  async function stopFromTray() {
+    try {
+      await serverStore.stop();
+    } catch (e) {
+      error = errorMessage(e);
+      await showMainWindow();
+    }
+  }
 
   onMount(async () => {
+    createTray()
+      .then((t) => (tray = t))
+      .catch(() => {});
     try {
       await Promise.all([recipesStore.refresh(), serverStore.refresh(), settingsStore.refresh()]);
     } catch (e) {
@@ -111,6 +166,7 @@
   onDestroy(() => {
     serverStore.unsubscribe();
     unlistenClose?.();
+    void tray?.dispose();
   });
 
   async function confirmDiscard(): Promise<boolean> {
