@@ -51,6 +51,10 @@ updates:
     ignore:
       - dependency-name: 'bun'
       - dependency-name: 'bun-types'
+      # TS 7 (native compiler) has no JS API yet; svelte-check and
+      # typescript-eslint both crash on load.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: 'github-actions'
     directory: '/'
