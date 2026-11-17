@@ -75,6 +75,16 @@ pub mod recipes {
     }
 
     #[tauri::command]
+    pub fn set_recipe_pinned(
+        state: tauri::State<AppState>,
+        id: String,
+        pinned: bool,
+    ) -> Result<Recipe, String> {
+        let db = state.db.lock().map_err(|e| e.to_string())?;
+        db.set_recipe_pinned(&id, pinned)
+    }
+
+    #[tauri::command]
     pub fn export_recipe(
         state: tauri::State<AppState>,
         id: String,
@@ -1006,7 +1016,11 @@ pub mod server {
                 settings,
                 app_handle,
             )
-            .await
+            .await?;
+        if let Ok(db) = state.db.lock() {
+            let _ = db.mark_recipe_used(&recipe_id);
+        }
+        Ok(())
     }
 
     #[tauri::command]

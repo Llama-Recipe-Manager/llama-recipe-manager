@@ -258,6 +258,14 @@
     }
   }
 
+  async function handleTogglePin(recipe: Recipe) {
+    try {
+      await recipesStore.setPinned(recipe.id, !recipe.pinned);
+    } catch (e) {
+      error = errorMessage(e);
+    }
+  }
+
   async function handleExport(recipe: Recipe) {
     try {
       await exportRecipeToFile(recipe);
@@ -324,6 +332,7 @@
         onNew={startNew}
         onImport={handleImport}
         onExport={handleExport}
+        onTogglePin={handleTogglePin}
         onStop={handleStop}
       />
     {:else if section === 'community' && FEATURES.community}

@@ -25,6 +25,10 @@ export function duplicateRecipe(id: string): Promise<Recipe> {
   return invoke('duplicate_recipe', { id });
 }
 
+export function setRecipePinned(id: string, pinned: boolean): Promise<Recipe> {
+  return invoke('set_recipe_pinned', { id, pinned });
+}
+
 export function exportRecipe(id: string, path: string): Promise<void> {
   return invoke('export_recipe', { id, path });
 }

@@ -1,6 +1,7 @@
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 import { clearServerLogs, getServerLogs, getServerStatus, startServer, stopServer } from '$lib/api';
+import { recipesStore } from '$lib/stores/recipes.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { LogLine, ServerExit, ServerStatus } from '$lib/types';
 import { fetchHealthOk } from '$lib/utils/llamaClient';
@@ -129,6 +130,7 @@ class ServerStore {
       this.phase = 'idle';
       throw e;
     }
+    recipesStore.refresh().catch(() => {});
   }
 
   dismissExit(): void {

@@ -5,6 +5,7 @@
   import { recipesStore } from '$lib/stores/recipes.svelte';
   import { serverStore } from '$lib/stores/server.svelte';
   import type { Recipe } from '$lib/types';
+  import { RECIPE_SORTS, type RecipeSort } from '$lib/utils/recipeSort';
 
   let {
     searchQuery = $bindable(''),
@@ -13,6 +14,7 @@
     onNew,
     onImport,
     onExport,
+    onTogglePin,
     onStop,
   }: {
     searchQuery: string;
@@ -21,6 +23,7 @@
     onNew: () => void;
     onImport: () => void;
     onExport: (recipe: Recipe) => void;
+    onTogglePin: (recipe: Recipe) => void;
     onStop: () => void;
   } = $props();
 
@@ -63,6 +66,18 @@
     />
   </div>
 
+  <label class="sort-row">
+    <span>Sort</span>
+    <select
+      value={recipesStore.sort}
+      onchange={(e) => recipesStore.setSort(e.currentTarget.value as RecipeSort)}
+    >
+      {#each RECIPE_SORTS as option (option.value)}
+        <option value={option.value}>{option.label}</option>
+      {/each}
+    </select>
+  </label>
+
   <ServerStatusBar {onStop} />
 
   <div class="recipe-list">
@@ -73,6 +88,7 @@
         running={serverStore.isRunning(recipe.id)}
         {onSelect}
         {onExport}
+        {onTogglePin}
       />
     {/each}
 
@@ -136,6 +152,24 @@
     border: none;
     border-radius: var(--radius-sm);
     font-size: 13px;
+  }
+
+  .sort-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 0 16px 8px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .sort-row select {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
   }
 
   .recipe-list {

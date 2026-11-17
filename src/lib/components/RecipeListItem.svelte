@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Menu } from '@tauri-apps/api/menu';
 
+  import Icon from './Icon.svelte';
+
   import type { Recipe } from '$lib/types';
 
   let {
@@ -9,18 +11,27 @@
     running,
     onSelect,
     onExport,
+    onTogglePin,
   }: {
     recipe: Recipe;
     active: boolean;
     running: boolean;
     onSelect: (id: string) => void;
     onExport: (recipe: Recipe) => void;
+    onTogglePin: (recipe: Recipe) => void;
   } = $props();
 
   async function showContextMenu(e: MouseEvent) {
     e.preventDefault();
     const menu = await Menu.new({
-      items: [{ id: 'export', text: 'Export…', action: () => onExport(recipe) }],
+      items: [
+        {
+          id: 'pin',
+          text: recipe.pinned ? 'Unpin' : 'Pin to top',
+          action: () => onTogglePin(recipe),
+        },
+        { id: 'export', text: 'Export…', action: () => onExport(recipe) },
+      ],
     });
     await menu.popup();
   }
@@ -34,6 +45,9 @@
 >
   <div class="recipe-item-header">
     <span class="recipe-item-name">{recipe.name}</span>
+    {#if recipe.pinned}
+      <span class="pin" title="Pinned"><Icon name="pin" size={12} /></span>
+    {/if}
     {#if running}
       <span class="status-dot running" title="Running"></span>
     {/if}
@@ -91,6 +105,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
     margin-top: 2px;
+  }
+
+  .pin {
+    display: flex;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+
+  .recipe-item.active .pin {
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .status-dot {

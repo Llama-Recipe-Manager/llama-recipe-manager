@@ -9,6 +9,8 @@ export interface Recipe {
   tags: string;
   created_at: string;
   updated_at: string;
+  pinned: boolean;
+  last_used_at: string;
 }
 
 export interface CreateRecipe {

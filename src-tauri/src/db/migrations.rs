@@ -29,6 +29,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "enable metrics by default",
         sql: include_str!("../migrations/0002_enable_metrics_by_default.sql"),
     },
+    Migration {
+        version: 3,
+        description: "recipe pin and last used",
+        sql: include_str!("../migrations/0003_recipe_pin_and_last_used.sql"),
+    },
 ];
 
 /// Apply all pending migrations in order, each inside its own transaction.
