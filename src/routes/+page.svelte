@@ -27,6 +27,7 @@
   let searchQuery = $state('');
   let error = $state('');
   let aboutOpen = $state(false);
+  let formDirty = $state(false);
 
   let communityFilters = $state<CommunityFilters>({
     search: '',
@@ -103,7 +104,15 @@
     unlistenClose?.();
   });
 
-  function goSection(next: Section) {
+  async function confirmDiscard(): Promise<boolean> {
+    if (!formDirty || (view !== 'new' && view !== 'edit')) return true;
+    const ok = await ask('Discard unsaved changes?', { kind: 'warning' });
+    if (ok) formDirty = false;
+    return ok;
+  }
+
+  async function goSection(next: Section) {
+    if (next !== section && !(await confirmDiscard())) return;
     section = next;
     error = '';
     if (next === 'recipes') {
@@ -111,21 +120,23 @@
     }
   }
 
-  function jumpToRunningRecipe() {
+  async function jumpToRunningRecipe() {
     const runningId = serverStore.runningRecipeId();
-    if (!runningId) return;
+    if (!runningId || !(await confirmDiscard())) return;
     section = 'recipes';
     view = 'list';
     recipesStore.select(runningId);
   }
 
-  function selectRecipe(id: string) {
+  async function selectRecipe(id: string) {
+    if (!(await confirmDiscard())) return;
     recipesStore.select(id);
     view = 'list';
     serverStore.resetLogView();
   }
 
-  function startNew() {
+  async function startNew() {
+    if (!(await confirmDiscard())) return;
     recipesStore.select(null);
     view = 'new';
   }
@@ -171,11 +182,12 @@
     const key = e.key.toLowerCase();
     if (key === 'n') {
       e.preventDefault();
-      goSection('recipes');
-      startNew();
+      if (!(await confirmDiscard())) return;
+      await goSection('recipes');
+      await startNew();
     } else if (key === 'f') {
       e.preventDefault();
-      if (section !== 'recipes') goSection('recipes');
+      if (section !== 'recipes') await goSection('recipes');
       await tick();
       document.querySelector<HTMLInputElement>('#recipe-search')?.focus();
     }
@@ -243,10 +255,17 @@
       {:else if section === 'community' && FEATURES.community}
         <CommunityView filters={communityFilters} />
       {:else if view === 'new'}
-        <RecipeForm mode="new" onCancel={cancelEdit} {onSaved} onError={setError} />
+        <RecipeForm
+          mode="new"
+          bind:dirty={formDirty}
+          onCancel={cancelEdit}
+          {onSaved}
+          onError={setError}
+        />
       {:else if view === 'edit' && selected}
         <RecipeForm
           mode="edit"
+          bind:dirty={formDirty}
           initial={selected}
           onCancel={cancelEdit}
           {onSaved}
