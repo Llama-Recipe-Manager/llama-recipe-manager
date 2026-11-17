@@ -10,11 +10,11 @@ export function previewCommand(
   const prog = settings.llama_server_path || 'llama-server';
   let args = recipeArgs;
   if (args.startsWith('llama-server ')) args = args.slice('llama-server '.length);
-  let preview = `${prog} ${args} --host ${settings.host} --port ${settings.port}`;
+  const env = settings.api_key ? `LLAMA_API_KEY=${redact(settings.api_key)} ` : '';
+  let preview = `${env}${prog} ${args} --host ${settings.host} --port ${settings.port}`;
   if (modelPath) preview += ` -m ${modelPath}`;
   if (mmprojPath) preview += ` --mmproj ${mmprojPath}`;
 
-  if (settings.api_key) preview += ` --api-key ${redact(settings.api_key)}`;
   if (settings.ssl_cert_file && settings.ssl_key_file) {
     preview += ` --ssl-cert-file ${settings.ssl_cert_file} --ssl-key-file ${settings.ssl_key_file}`;
   }
