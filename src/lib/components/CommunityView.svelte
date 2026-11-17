@@ -178,19 +178,7 @@
   }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 7px 16px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
     text-decoration: none;
-  }
-
-  .btn.primary {
-    background: var(--accent);
-    color: white;
   }
 
   .btn.primary:disabled {

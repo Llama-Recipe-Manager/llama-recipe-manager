@@ -410,64 +410,8 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 7px 16px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.15s;
-    white-space: nowrap;
-    border: none;
-    cursor: pointer;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn.small {
-    padding: 5px 12px;
-    font-size: 12px;
-  }
-
-  .btn.primary {
-    background: var(--accent);
-    color: white;
-  }
-
-  .btn.primary:hover:not(:disabled) {
-    background: var(--accent-hover);
-  }
-
-  .btn.secondary {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  .btn.secondary:hover:not(:disabled) {
-    background: var(--border);
-  }
-
   .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     width: 30px;
     height: 30px;
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    transition: all 0.15s;
-    border: none;
-    background: none;
-    cursor: pointer;
-  }
-
-  .btn-icon:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
   }
 </style>

@@ -73,7 +73,7 @@
     <p id="confirm-message" class="message">{message}</p>
     <div class="actions">
       <button
-        class="btn cancel"
+        class="btn secondary"
         data-cancel-btn
         onclick={onCancel}
         onmouseenter={() => (focusedButton = 'cancel')}
@@ -159,34 +159,6 @@
   }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     padding: 7px 18px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.15s;
-    cursor: pointer;
-    border: none;
-    white-space: nowrap;
-  }
-
-  .btn.cancel {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  .btn.cancel:hover {
-    background: var(--bg-quaternary, var(--bg-tertiary));
-  }
-
-  .btn.danger {
-    background: var(--danger);
-    color: white;
-  }
-
-  .btn.danger:hover {
-    background: var(--danger-hover);
   }
 </style>
