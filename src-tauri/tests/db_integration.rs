@@ -43,7 +43,7 @@ fn create_get_update_delete_roundtrip() {
 
     let created = db.create_recipe(sample_recipe()).expect("create");
     assert_eq!(created.name, "Llama 3 8B");
-    assert!(!created.id.is_empty());
+    assert_ne!(created.id, "");
 
     let fetched = db.get_recipe(&created.id).expect("get");
     assert_eq!(fetched.id, created.id);
