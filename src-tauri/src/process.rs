@@ -107,11 +107,6 @@ impl ProcessManager {
         final_args.push("--port".to_string());
         final_args.push(settings.port.to_string());
 
-        // Security
-        if !settings.api_key.is_empty() {
-            final_args.push("--api-key".to_string());
-            final_args.push(settings.api_key.clone());
-        }
         if !settings.ssl_cert_file.is_empty() && !settings.ssl_key_file.is_empty() {
             final_args.push("--ssl-cert-file".to_string());
             final_args.push(expand_tilde(&settings.ssl_cert_file));
@@ -236,6 +231,11 @@ impl ProcessManager {
 
         if !settings.hf_token.is_empty() {
             cmd.env("HF_TOKEN", &settings.hf_token);
+        }
+        // Passed via env rather than `--api-key` so the key isn't visible
+        // to other users through `ps` / the process table.
+        if !settings.api_key.is_empty() {
+            cmd.env("LLAMA_API_KEY", &settings.api_key);
         }
 
         let mut child = cmd

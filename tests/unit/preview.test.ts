@@ -43,15 +43,16 @@ describe('previewCommand', () => {
     expect(out).toContain('--mmproj /proj.gguf');
   });
 
-  it('redacts api_key in output', () => {
+  it('shows a redacted api_key as an env var, not a flag', () => {
     const out = previewCommand({ ...baseSettings, api_key: 'super-secret-token' }, '');
-    expect(out).toContain('--api-key');
+    expect(out.startsWith('LLAMA_API_KEY=')).toBe(true);
+    expect(out).not.toContain('--api-key');
     expect(out).not.toContain('super-secret-token');
   });
 
   it('redacts very short api keys with stars only', () => {
     const out = previewCommand({ ...baseSettings, api_key: 'abc' }, '');
-    expect(out).toContain('--api-key ***');
+    expect(out).toContain('LLAMA_API_KEY=*** ');
   });
 
   it('emits TLS pair only when both cert and key are set', () => {
