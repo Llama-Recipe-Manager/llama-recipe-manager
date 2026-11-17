@@ -98,19 +98,19 @@ class ServerStore {
     this.logs = await getServerLogs();
   }
 
-  async start(
-    recipeId: string,
-    command: string,
-    modelPath: string,
-    mmprojPath: string,
-  ): Promise<void> {
+  async start(recipeId: string): Promise<void> {
     this.logs = [];
     this.lastExit = null;
     // Optimistic: switch to `starting` immediately so the UI can show a
     // spinner while the backend spawns and we wait for /health.
     this.phase = 'starting';
     this.startedAt = null;
-    await startServer(recipeId, command, modelPath, mmprojPath);
+    try {
+      await startServer(recipeId);
+    } catch (e) {
+      this.phase = 'idle';
+      throw e;
+    }
   }
 
   dismissExit(): void {
