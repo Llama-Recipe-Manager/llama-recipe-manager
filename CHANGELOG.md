@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-11-18
+
+### Added
+
+- **Redesigned UI**: new Graphite (dark) and Paper (light) themes built on
+  Tailwind and shadcn-svelte, a macOS overlay title bar with live server
+  status, and a tabbed recipe page (Overview, Live stats, Logs). (PR #90)
+- **Command palette**: ⌘K / Ctrl+K to run actions, jump between sections and
+  open recipes; ⌘, / Ctrl+, opens Settings. (PR #90)
+- **Models section**: browse local GGUFs and download from Hugging Face in one
+  place; downloads keep running while you navigate. (PR #90)
+- **Structured flag editor**: fields for common llama-server flags that stay in
+  sync with the raw argument string. (PR #90)
+- **System tray** with server status and start/stop. (PR #85)
+- **Pinned recipes** and sorting by last updated, last used or name. (PR #86)
+- **Import/export** recipes as `.ripe` files. (PR #75)
+- **Cancel Hugging Face downloads**. (PR #73)
+- Keyboard shortcuts: ⌘N / Ctrl+N new recipe, ⌘F / Ctrl+F search, ⌘S / Ctrl+S
+  save. (PRs #69, #74)
+
+### Changed
+
+- Settings are split into sections with a sub-nav and a save bar. (PR #90)
+- Errors appear as toasts and confirmations use in-app dialogs. (PR #90)
+- GGUF type detection is cached across scans. (PR #79)
+
+### Security
+
+- The API key and Hugging Face token are stored in the OS keychain. (PR #81)
+- A content security policy is enabled. (PR #80)
+- The API key is passed via `LLAMA_API_KEY` instead of the command line.
+  (PR #71)
+
+### Fixed
+
+- A busy port is reported before llama-server is spawned. (PR #83)
+- Unsaved edits prompt before import and quit. (PR #76)
+- Switching recipes no longer clears the running server's logs. (PR #90)
+- Log reading is lossy-safe, batched and coloured by level; copy respects the
+  active filter. (PRs #66, #72)
+- Recipes launch from the database and accept Windows absolute paths. (PR #65)
+- Settings are saved in a single transaction. (PR #68)
+- GGUF probing runs off the main thread, HF URLs are encoded and download
+  progress is throttled. (PR #67)
+
 ## [0.4.0] — 2026-08-16
 
 ### Added
