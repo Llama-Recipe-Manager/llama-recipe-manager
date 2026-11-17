@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import { serverStore } from '$lib/stores/server.svelte';
+  import { copyText } from '$lib/utils/clipboard';
   import { errorMessage } from '$lib/utils/format';
   import { logLevel } from '$lib/utils/logs';
 
@@ -52,13 +53,20 @@
     }
   }
 
+  let copied = $state(false);
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+
   async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(recipeLogs.map((l) => l.line).join('\n'));
-    } catch (e) {
-      onError?.(errorMessage(e));
+    if (!(await copyText(filteredLogs.map((l) => l.line).join('\n')))) {
+      onError?.('Could not copy logs to clipboard.');
+      return;
     }
+    copied = true;
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => (copied = false), 1600);
   }
+
+  onDestroy(() => clearTimeout(copiedTimer));
 </script>
 
 <section class="logs">
@@ -69,7 +77,10 @@
         class:live={recipeId ? serverStore.isActive(recipeId) : serverStore.anyRunning()}
       ></span>
       <h3>Logs</h3>
-      <span class="count">{recipeLogs.length} {recipeLogs.length === 1 ? 'line' : 'lines'}</span>
+      <span class="count">
+        {filter.trim() ? `${filteredLogs.length} of ` : ''}{recipeLogs.length}
+        {recipeLogs.length === 1 ? 'line' : 'lines'}
+      </span>
     </div>
     <div class="logs-actions">
       <input
@@ -83,7 +94,14 @@
         <input type="checkbox" bind:checked={autoScroll} />
         <span>Auto-scroll</span>
       </label>
-      <button class="action" onclick={handleCopy} disabled={recipeLogs.length === 0}> Copy </button>
+      <button
+        class="action"
+        onclick={handleCopy}
+        disabled={filteredLogs.length === 0}
+        title={filter.trim() ? 'Copy matching lines' : 'Copy all lines'}
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
       <button class="action" onclick={handleClear} disabled={recipeLogs.length === 0}>
         Clear
       </button>
