@@ -26,6 +26,8 @@ pub struct Recipe {
     pub tags: String,
     pub created_at: String,
     pub updated_at: String,
+    pub pinned: bool,
+    pub last_used_at: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -222,7 +224,7 @@ impl Database {
         let mut stmt = self
             .conn
             .prepare(
-                "SELECT id, name, description, command, model_path, mmproj_path, gpu_info, tags, created_at, updated_at
+                "SELECT id, name, description, command, model_path, mmproj_path, gpu_info, tags, created_at, updated_at, pinned, last_used_at
                  FROM recipes ORDER BY updated_at DESC",
             )
             .map_err(|e| e.to_string())?;
@@ -239,7 +241,7 @@ impl Database {
     pub fn get_recipe(&self, id: &str) -> Result<Recipe, String> {
         self.conn
             .query_row(
-                "SELECT id, name, description, command, model_path, mmproj_path, gpu_info, tags, created_at, updated_at
+                "SELECT id, name, description, command, model_path, mmproj_path, gpu_info, tags, created_at, updated_at, pinned, last_used_at
                  FROM recipes WHERE id = ?1",
                 params![id],
                 row_to_recipe,
@@ -351,6 +353,31 @@ impl Database {
         Ok(())
     }
 
+    /// Pinning is not an edit, so `updated_at` is left alone.
+    pub fn set_recipe_pinned(&self, id: &str, pinned: bool) -> Result<Recipe, String> {
+        let rows = self
+            .conn
+            .execute(
+                "UPDATE recipes SET pinned = ?1 WHERE id = ?2",
+                params![pinned, id],
+            )
+            .map_err(|e| e.to_string())?;
+        if rows == 0 {
+            return Err("Recipe not found".to_string());
+        }
+        self.get_recipe(id)
+    }
+
+    pub fn mark_recipe_used(&self, id: &str) -> Result<(), String> {
+        self.conn
+            .execute(
+                "UPDATE recipes SET last_used_at = ?1 WHERE id = ?2",
+                params![chrono::Utc::now().to_rfc3339(), id],
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+
     /// Create a recipe from an untrusted source (e.g. a shared `.ripe` file).
     /// Enforces the community flag policy and renames on name clashes.
     pub fn import_recipe(&self, mut input: CreateRecipe) -> Result<Recipe, String> {
@@ -408,5 +435,7 @@ fn row_to_recipe(row: &rusqlite::Row<'_>) -> rusqlite::Result<Recipe> {
         tags: row.get(7)?,
         created_at: row.get(8)?,
         updated_at: row.get(9)?,
+        pinned: row.get(10)?,
+        last_used_at: row.get(11)?,
     })
 }

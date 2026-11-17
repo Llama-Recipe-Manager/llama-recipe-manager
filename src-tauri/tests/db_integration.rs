@@ -147,3 +147,24 @@ fn settings_roundtrip() {
     assert!(!read.webui_enabled);
     assert!(read.keep_server_on_exit);
 }
+
+#[test]
+fn pinning_and_use_do_not_count_as_edits() {
+    let (db, _dir) = fresh_db();
+    let created = db.create_recipe(sample_recipe()).expect("create");
+    assert!(!created.pinned);
+    assert_eq!(created.last_used_at, "");
+
+    let pinned = db.set_recipe_pinned(&created.id, true).expect("pin");
+    assert!(pinned.pinned);
+    db.mark_recipe_used(&created.id).expect("mark used");
+
+    let after = db.get_recipe(&created.id).expect("get");
+    assert!(after.pinned);
+    assert_ne!(after.last_used_at, "");
+    assert_eq!(after.updated_at, created.updated_at);
+
+    let copy = db.duplicate_recipe(&created.id).expect("duplicate");
+    assert!(!copy.pinned);
+    assert!(db.set_recipe_pinned("missing", true).is_err());
+}

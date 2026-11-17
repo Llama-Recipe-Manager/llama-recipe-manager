@@ -83,6 +83,8 @@ mod tests {
             tags: "qwen, 35b".to_string(),
             created_at: String::new(),
             updated_at: String::new(),
+            pinned: false,
+            last_used_at: String::new(),
         }
     }
 
