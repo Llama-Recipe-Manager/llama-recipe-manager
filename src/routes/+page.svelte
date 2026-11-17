@@ -61,20 +61,27 @@
     void updaterStore.check();
 
     // Intercept the window close so we can ask the user before tearing down
-    // a running server (or cancelling a still-starting one). If they say no
+    // a running server (or cancelling a still-starting one) or dropping
+    // unsaved recipe edits. If they say no
     // we keep the window open; if they say yes we let the close proceed,
     // and the Rust-side ExitRequested handler does the actual cleanup.
     const win = getCurrentWindow();
     unlistenClose = await win.onCloseRequested(async (event) => {
-      if (!serverStore.anyActive()) return;
+      const unsaved = formDirty && (view === 'new' || view === 'edit');
+      if (!serverStore.anyActive() && !unsaved) return;
       event.preventDefault();
       const starting = serverStore.phase === 'starting';
       const keep = settingsStore.current.keep_server_on_exit;
-      const message = starting
-        ? 'llama-server is still starting. Quit anyway and cancel the launch?'
-        : keep
-          ? 'Quit Llama Recipe Manager? llama-server will keep running in the background (per your settings).'
-          : 'llama-server is running. Quit Llama Recipe Manager? The server will be stopped.';
+      const serverMessage = !serverStore.anyActive()
+        ? 'Quit Llama Recipe Manager?'
+        : starting
+          ? 'llama-server is still starting. Quit anyway and cancel the launch?'
+          : keep
+            ? 'Quit Llama Recipe Manager? llama-server will keep running in the background (per your settings).'
+            : 'llama-server is running. Quit Llama Recipe Manager? The server will be stopped.';
+      const message = unsaved
+        ? `You have unsaved recipe changes that will be lost.\n\n${serverMessage}`
+        : serverMessage;
       const confirmed = await ask(message, {
         title: 'Quit Llama Recipe Manager',
         kind: 'warning',
@@ -203,6 +210,7 @@
   }
 
   async function handleImport() {
+    if (!(await confirmDiscard())) return;
     try {
       const imported = await importRecipeFromFile();
       if (!imported) return;
