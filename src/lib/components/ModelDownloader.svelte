@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import { listen } from '@tauri-apps/api/event';
   import {
+    cancelDownload,
+    DOWNLOAD_CANCELLED,
     listHfModelFiles,
     downloadHfModel,
     type DownloadProgress,
@@ -75,8 +77,9 @@
     error = '';
     unlisten?.();
 
+    const basename = file.name.split('/').pop();
     unlisten = await listen<DownloadProgress>('download-progress', (event) => {
-      if (event.payload.filename === file.name) {
+      if (event.payload.filename === basename) {
         progress = event.payload;
       }
     });
@@ -88,12 +91,22 @@
     } catch (e) {
       unlisten?.();
       downloading = null;
-      error = String(e);
+      progress = null;
+      if (String(e) !== DOWNLOAD_CANCELLED) error = String(e);
     }
   }
 
+  function cancel() {
+    if (downloading) void cancelDownload(downloading, destDir);
+  }
+
+  function close() {
+    cancel();
+    onClose();
+  }
+
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
+    if (e.key === 'Escape') close();
   }
 </script>
 
@@ -101,7 +114,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="backdrop" onclick={onClose}>
+<div class="backdrop" onclick={close}>
   <div
     class="downloader"
     bind:this={dialog}
@@ -113,7 +126,7 @@
   >
     <div class="downloader-header">
       <h3 id="downloader-title">Download {filter === 'mmproj' ? 'mmproj' : 'Model'}</h3>
-      <button class="btn-icon" onclick={onClose} aria-label="Close">
+      <button class="btn-icon" onclick={close} aria-label="Close">
         <svg
           width="16"
           height="16"
@@ -205,8 +218,11 @@
             )}%"
           ></div>
         </div>
-        <div class="progress-text">
-          {formatBytes(progress.bytes_downloaded)} / {formatBytes(progress.total_bytes)}
+        <div class="progress-row">
+          <span class="progress-text">
+            {formatBytes(progress.bytes_downloaded)} / {formatBytes(progress.total_bytes)}
+          </span>
+          <button class="btn secondary small" onclick={cancel}>Cancel</button>
         </div>
       {/if}
     </div>
@@ -381,10 +397,16 @@
     transition: width 0.3s ease;
   }
 
+  .progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .progress-text {
     font-size: 11px;
     color: var(--text-tertiary);
-    text-align: center;
     font-variant-numeric: tabular-nums;
   }
 
