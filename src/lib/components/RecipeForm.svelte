@@ -1,7 +1,7 @@
 <script lang="ts">
-  import FilePickerInput from './FilePickerInput.svelte';
-  import ModelBrowser from './ModelBrowser.svelte';
-  import ModelDownloader from './ModelDownloader.svelte';
+  import { ask } from '@tauri-apps/plugin-dialog';
+
+  import ModelFileField from './ModelFileField.svelte';
   import { createRecipe, updateRecipe } from '$lib/api';
   import { recipesStore } from '$lib/stores/recipes.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
@@ -14,12 +14,14 @@
   let {
     mode,
     initial = null,
+    dirty = $bindable(false),
     onCancel,
     onSaved,
     onError,
   }: {
     mode: 'new' | 'edit';
     initial?: Recipe | null;
+    dirty?: boolean;
     onCancel: () => void;
     onSaved: (id: string) => void;
     onError: (msg: string) => void;
@@ -43,11 +45,43 @@
   let gpuInfo = $state(initial?.gpu_info ?? '');
   /* svelte-ignore state_referenced_locally */
   let tags = $state(initial?.tags ?? '');
-  let showModelBrowser = $state(false);
-  let showModelDownloader = $state(false);
-  let showMmprojBrowser = $state(false);
-  let showMmprojDownloader = $state(false);
   let formErrors = $state<string[]>([]);
+  let saving = $state(false);
+
+  const snapshot = () =>
+    JSON.stringify([
+      name,
+      description,
+      command,
+      modelPath,
+      vision ? mmprojPath : '',
+      gpuInfo,
+      tags,
+    ]);
+  const pristine = snapshot();
+
+  $effect(() => {
+    dirty = snapshot() !== pristine;
+  });
+
+  async function cancel() {
+    if (dirty && !(await ask('Discard unsaved changes?', { kind: 'warning' }))) return;
+    dirty = false;
+    onCancel();
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      void save();
+    } else if (
+      e.key === 'Escape' &&
+      !e.defaultPrevented &&
+      !document.querySelector('[aria-modal="true"]')
+    ) {
+      void cancel();
+    }
+  }
 
   /* svelte-ignore state_referenced_locally */
   let gpuSelect = $state(
@@ -61,6 +95,7 @@
   }
 
   async function save() {
+    if (saving) return;
     formErrors = validateCommand(command);
     if (formErrors.length > 0) return;
 
@@ -77,9 +112,10 @@
       return;
     }
 
+    saving = true;
     try {
       const payload = {
-        name,
+        name: name.trim(),
         description,
         command,
         model_path: modelPath,
@@ -88,27 +124,36 @@
         tags,
       };
 
-      if (mode === 'new') {
-        const r = await createRecipe(payload);
-        await recipesStore.refresh();
-        onSaved(r.id);
-      } else if (initial) {
-        await updateRecipe({ id: initial.id, ...payload });
-        await recipesStore.refresh();
-        onSaved(initial.id);
-      }
+      const saved =
+        mode === 'edit' && initial
+          ? await updateRecipe({ id: initial.id, ...payload })
+          : await createRecipe(payload);
+      await recipesStore.refresh();
+      dirty = false;
+      onSaved(saved.id);
     } catch (e) {
       onError(errorMessage(e));
+    } finally {
+      saving = false;
     }
   }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="form-view">
   <div class="form-header">
     <h2>{mode === 'new' ? 'New Recipe' : 'Edit Recipe'}</h2>
     <div class="form-actions">
-      <button class="btn secondary" onclick={onCancel}>Cancel</button>
-      <button class="btn primary" onclick={save}>Save</button>
+      <button class="btn secondary" onclick={cancel} aria-keyshortcuts="Escape">Cancel</button>
+      <button
+        class="btn primary"
+        onclick={save}
+        disabled={saving}
+        aria-keyshortcuts="Meta+S Control+S"
+      >
+        {saving ? 'Saving…' : 'Save'}
+      </button>
     </div>
   </div>
 
@@ -138,54 +183,7 @@
 
     <div class="form-group">
       <label for="model_path">Model File</label>
-      <div class="model-path-row">
-        <FilePickerInput
-          bind:value={modelPath}
-          placeholder="No model selected"
-          defaultPath={settingsStore.current.model_dir || undefined}
-        />
-        <button
-          class="btn secondary"
-          onclick={() => (showModelBrowser = true)}
-          title="Scan model directory"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            <line x1="8" y1="11" x2="14" y2="11" />
-            <line x1="11" y1="8" x2="11" y2="14" />
-          </svg>
-          Scan
-        </button>
-        <button
-          class="btn secondary"
-          onclick={() => (showModelDownloader = true)}
-          title="Download from HuggingFace"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          >
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Download
-        </button>
-      </div>
+      <ModelFileField bind:value={modelPath} kind="model" placeholder="No model selected" />
       <span class="form-hint"
         >Select a .gguf model file, or click "Scan" to browse your model directory.</span
       >
@@ -197,53 +195,12 @@
         <span>Vision (mmproj)</span>
       </label>
       {#if vision}
-        <div class="model-path-row" style="margin-top: 6px">
-          <FilePickerInput
+        <div class="mmproj-field">
+          <ModelFileField
             bind:value={mmprojPath}
+            kind="mmproj"
             placeholder="No mmproj file selected"
-            defaultPath={settingsStore.current.model_dir || undefined}
           />
-          <button
-            class="btn secondary"
-            onclick={() => (showMmprojBrowser = true)}
-            title="Scan for mmproj files"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="8" y1="11" x2="14" y2="11" />
-              <line x1="11" y1="8" x2="11" y2="14" />
-            </svg>
-            Scan
-          </button>
-          <button
-            class="btn secondary"
-            onclick={() => (showMmprojDownloader = true)}
-            title="Download from HuggingFace"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            >
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Download
-          </button>
         </div>
         <span class="form-hint"
           >Select the mmproj .gguf file for vision. Injected as --mmproj at runtime.</span
@@ -311,56 +268,6 @@
   </div>
 </div>
 
-{#if showModelBrowser}
-  <ModelBrowser
-    filter="model"
-    directory={settingsStore.current.model_dir}
-    onSelect={(path) => {
-      modelPath = path;
-      showModelBrowser = false;
-    }}
-    onClose={() => (showModelBrowser = false)}
-  />
-{/if}
-
-{#if showModelDownloader}
-  <ModelDownloader
-    filter="model"
-    destDir={settingsStore.current.model_dir}
-    hfToken={settingsStore.current.hf_token}
-    onSelect={(path) => {
-      modelPath = path;
-      showModelDownloader = false;
-    }}
-    onClose={() => (showModelDownloader = false)}
-  />
-{/if}
-
-{#if showMmprojBrowser}
-  <ModelBrowser
-    filter="mmproj"
-    directory={settingsStore.current.model_dir}
-    onSelect={(path) => {
-      mmprojPath = path;
-      showMmprojBrowser = false;
-    }}
-    onClose={() => (showMmprojBrowser = false)}
-  />
-{/if}
-
-{#if showMmprojDownloader}
-  <ModelDownloader
-    filter="mmproj"
-    destDir={settingsStore.current.model_dir}
-    hfToken={settingsStore.current.hf_token}
-    onSelect={(path) => {
-      mmprojPath = path;
-      showMmprojDownloader = false;
-    }}
-    onClose={() => (showMmprojDownloader = false)}
-  />
-{/if}
-
 <style>
   .form-view {
     padding: 24px 32px;
@@ -402,14 +309,8 @@
     color: var(--text-secondary);
   }
 
-  .model-path-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .model-path-row :global(.input-with-button) {
-    flex: 1;
+  .mmproj-field {
+    margin-top: 6px;
   }
 
   .form-group input,
