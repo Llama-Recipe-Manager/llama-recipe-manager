@@ -55,6 +55,7 @@ tauri-plugin-dialog = "2.7.1"
 reqwest = { version = "0.13", features = ["stream", "json"] }
 futures-util = "0.3"
 gguf-rs = "0.1"
+toml = "0.9"
 
 # Used to send SIGTERM for a graceful llama-server shutdown on Unix.
 [target."cfg(unix)".dependencies]

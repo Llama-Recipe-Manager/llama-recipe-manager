@@ -25,12 +25,8 @@
 pub enum RecipeSource {
     /// Authored by the local user. Only [`FORBIDDEN_FLAGS`] is enforced.
     Local,
-    /// Imported from an untrusted source (community share, URL, etc.).
+    /// Imported from an untrusted source (`.ripe` file, community share, URL).
     /// Both [`FORBIDDEN_FLAGS`] and [`UNSAFE_FLAGS`] are enforced.
-    ///
-    /// Reserved for the upcoming community-recipes feature; not constructed
-    /// yet by any caller.
-    #[allow(dead_code)]
     Community,
 }
 

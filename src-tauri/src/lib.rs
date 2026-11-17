@@ -7,6 +7,7 @@
 mod commands;
 pub mod db;
 mod process;
+mod ripe;
 mod state;
 pub mod validate;
 
@@ -56,6 +57,8 @@ pub fn run() {
             commands::recipes::update_recipe,
             commands::recipes::delete_recipe,
             commands::recipes::duplicate_recipe,
+            commands::recipes::export_recipe,
+            commands::recipes::import_recipe,
             commands::server::get_llama_server_info,
             commands::models::scan_models,
             commands::models::cleanup_orphan_parts,

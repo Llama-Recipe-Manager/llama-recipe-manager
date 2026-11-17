@@ -25,7 +25,10 @@ pub mod settings {
 }
 
 pub mod recipes {
+    use std::path::PathBuf;
+
     use crate::db::{CreateRecipe, Recipe, UpdateRecipe};
+    use crate::ripe;
     use crate::state::AppState;
 
     #[tauri::command]
@@ -68,6 +71,48 @@ pub mod recipes {
     pub fn duplicate_recipe(state: tauri::State<AppState>, id: String) -> Result<Recipe, String> {
         let db = state.db.lock().map_err(|e| e.to_string())?;
         db.duplicate_recipe(&id)
+    }
+
+    #[tauri::command]
+    pub fn export_recipe(
+        state: tauri::State<AppState>,
+        id: String,
+        path: String,
+    ) -> Result<(), String> {
+        let recipe = {
+            let db = state.db.lock().map_err(|e| e.to_string())?;
+            db.get_recipe(&id)?
+        };
+        let path = with_ripe_extension(&path);
+        std::fs::write(&path, ripe::to_toml(recipe)?)
+            .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
+    }
+
+    #[tauri::command]
+    pub fn import_recipe(state: tauri::State<AppState>, path: String) -> Result<Recipe, String> {
+        let size = std::fs::metadata(&path)
+            .map_err(|e| format!("Failed to read {}: {}", path, e))?
+            .len();
+        if size > ripe::MAX_FILE_BYTES {
+            return Err("Recipe file is too large".to_string());
+        }
+        let text = std::fs::read_to_string(&path)
+            .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+        let input = ripe::from_toml(&text)?;
+        let db = state.db.lock().map_err(|e| e.to_string())?;
+        db.import_recipe(input)
+    }
+
+    fn with_ripe_extension(path: &str) -> PathBuf {
+        let path = PathBuf::from(path);
+        if path.extension().is_some_and(|e| e == ripe::EXTENSION) {
+            path
+        } else {
+            let mut name = path.into_os_string();
+            name.push(".");
+            name.push(ripe::EXTENSION);
+            name.into()
+        }
     }
 }
 

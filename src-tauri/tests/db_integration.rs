@@ -112,6 +112,25 @@ fn create_requires_model_path() {
 }
 
 #[test]
+fn import_renames_on_name_clash() {
+    let (db, _dir) = fresh_db();
+    db.create_recipe(sample_recipe()).expect("create");
+    let first = db.import_recipe(sample_recipe()).expect("import 1");
+    let second = db.import_recipe(sample_recipe()).expect("import 2");
+    assert_eq!(first.name, "Llama 3 8B (imported)");
+    assert_eq!(second.name, "Llama 3 8B (imported 2)");
+}
+
+#[test]
+fn import_rejects_unsafe_flags_that_local_recipes_allow() {
+    let (db, _dir) = fresh_db();
+    let mut risky = sample_recipe();
+    risky.command = "--ctx-size 4096 --tools all".to_string();
+    assert!(db.import_recipe(risky).unwrap_err().contains("--tools"));
+    assert!(db.list_recipes().expect("list").is_empty());
+}
+
+#[test]
 fn settings_roundtrip() {
     let (db, _dir) = fresh_db();
     let mut s = db.get_settings().expect("defaults");

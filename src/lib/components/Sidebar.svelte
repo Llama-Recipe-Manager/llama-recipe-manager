@@ -3,18 +3,23 @@
   import ServerStatusBar from './ServerStatusBar.svelte';
   import { recipesStore } from '$lib/stores/recipes.svelte';
   import { serverStore } from '$lib/stores/server.svelte';
+  import type { Recipe } from '$lib/types';
 
   let {
     searchQuery = $bindable(''),
     activeId,
     onSelect,
     onNew,
+    onImport,
+    onExport,
     onStop,
   }: {
     searchQuery: string;
     activeId: string | null;
     onSelect: (id: string) => void;
     onNew: () => void;
+    onImport: () => void;
+    onExport: (recipe: Recipe) => void;
     onStop: () => void;
   } = $props();
 
@@ -25,6 +30,26 @@
   <div class="sidebar-header">
     <h1 class="app-title">My Recipes</h1>
     <div class="sidebar-actions">
+      <button
+        class="btn-icon"
+        onclick={onImport}
+        title="Import recipe (.ripe)"
+        aria-label="Import recipe"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </button>
       <button
         class="btn-icon"
         onclick={onNew}
@@ -77,6 +102,7 @@
         active={activeId === recipe.id}
         running={serverStore.isRunning(recipe.id)}
         {onSelect}
+        {onExport}
       />
     {/each}
 

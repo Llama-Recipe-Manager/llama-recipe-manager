@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Menu } from '@tauri-apps/api/menu';
+
   import type { Recipe } from '$lib/types';
 
   let {
@@ -6,15 +8,30 @@
     active,
     running,
     onSelect,
+    onExport,
   }: {
     recipe: Recipe;
     active: boolean;
     running: boolean;
     onSelect: (id: string) => void;
+    onExport: (recipe: Recipe) => void;
   } = $props();
+
+  async function showContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    const menu = await Menu.new({
+      items: [{ id: 'export', text: 'Export…', action: () => onExport(recipe) }],
+    });
+    await menu.popup();
+  }
 </script>
 
-<button class="recipe-item" class:active onclick={() => onSelect(recipe.id)}>
+<button
+  class="recipe-item"
+  class:active
+  onclick={() => onSelect(recipe.id)}
+  oncontextmenu={showContextMenu}
+>
   <div class="recipe-item-header">
     <span class="recipe-item-name">{recipe.name}</span>
     {#if running}
