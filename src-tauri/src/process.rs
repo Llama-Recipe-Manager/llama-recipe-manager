@@ -1,9 +1,10 @@
 use crate::db::Settings;
 use serde::Serialize;
+use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
 
@@ -11,6 +12,8 @@ use tokio::sync::Mutex;
 /// Long enough for llama-server to flush slots and free GPU memory, short
 /// enough that a hung server doesn't keep the user staring at a frozen UI.
 const GRACEFUL_TIMEOUT: Duration = Duration::from_secs(8);
+
+const MAX_LOG_LINES: usize = 2000;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ServerStatus {
@@ -51,14 +54,14 @@ struct RunningServer {
 
 pub struct ProcessManager {
     server: Arc<Mutex<Option<RunningServer>>>,
-    logs: Arc<Mutex<Vec<LogLine>>>,
+    logs: Arc<Mutex<VecDeque<LogLine>>>,
 }
 
 impl ProcessManager {
     pub fn new() -> Self {
         Self {
             server: Arc::new(Mutex::new(None)),
-            logs: Arc::new(Mutex::new(Vec::new())),
+            logs: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
@@ -144,6 +147,48 @@ impl ProcessManager {
         Ok((program, final_args))
     }
 
+    /// Lines are decoded lossily: a strict UTF-8 reader would stop at the
+    /// first bad byte and leave the pipe undrained, eventually blocking the
+    /// child on a full pipe buffer.
+    fn spawn_log_reader<R>(
+        &self,
+        stream: R,
+        recipe_id: String,
+        is_stderr: bool,
+        app_handle: tauri::AppHandle,
+    ) where
+        R: AsyncRead + Unpin + Send + 'static,
+    {
+        let logs = self.logs.clone();
+        tokio::spawn(async move {
+            let mut reader = BufReader::new(stream);
+            let mut buf = Vec::new();
+            loop {
+                buf.clear();
+                match reader.read_until(b'\n', &mut buf).await {
+                    Ok(0) | Err(_) => break,
+                    Ok(_) => {}
+                }
+                let line = String::from_utf8_lossy(&buf)
+                    .trim_end_matches(['\n', '\r'])
+                    .to_string();
+                let log = LogLine {
+                    recipe_id: recipe_id.clone(),
+                    line,
+                    is_stderr,
+                };
+                {
+                    let mut l = logs.lock().await;
+                    if l.len() >= MAX_LOG_LINES {
+                        l.pop_front();
+                    }
+                    l.push_back(log.clone());
+                }
+                let _ = tauri::Emitter::emit(&app_handle, "server-log", &log);
+            }
+        });
+    }
+
     pub async fn start_server(
         &self,
         recipe_id: String,
@@ -203,59 +248,11 @@ impl ProcessManager {
             logs.clear();
         }
 
-        let stdout = child.stdout.take();
-        let stderr = child.stderr.take();
-
-        let logs_clone = self.logs.clone();
-        let rid = recipe_id.clone();
-        let ah = app_handle.clone();
-        if let Some(stdout) = stdout {
-            tokio::spawn(async move {
-                let reader = BufReader::new(stdout);
-                let mut lines = reader.lines();
-                while let Ok(Some(line)) = lines.next_line().await {
-                    let log = LogLine {
-                        recipe_id: rid.clone(),
-                        line,
-                        is_stderr: false,
-                    };
-                    {
-                        let mut l = logs_clone.lock().await;
-                        l.push(log.clone());
-                        if l.len() > 2000 {
-                            let drain = l.len() - 2000;
-                            l.drain(..drain);
-                        }
-                    }
-                    let _ = tauri::Emitter::emit(&ah, "server-log", &log);
-                }
-            });
+        if let Some(stdout) = child.stdout.take() {
+            self.spawn_log_reader(stdout, recipe_id.clone(), false, app_handle.clone());
         }
-
-        let logs_clone2 = self.logs.clone();
-        let rid2 = recipe_id.clone();
-        let ah2 = app_handle.clone();
-        if let Some(stderr) = stderr {
-            tokio::spawn(async move {
-                let reader = BufReader::new(stderr);
-                let mut lines = reader.lines();
-                while let Ok(Some(line)) = lines.next_line().await {
-                    let log = LogLine {
-                        recipe_id: rid2.clone(),
-                        line,
-                        is_stderr: true,
-                    };
-                    {
-                        let mut l = logs_clone2.lock().await;
-                        l.push(log.clone());
-                        if l.len() > 2000 {
-                            let drain = l.len() - 2000;
-                            l.drain(..drain);
-                        }
-                    }
-                    let _ = tauri::Emitter::emit(&ah2, "server-log", &log);
-                }
-            });
+        if let Some(stderr) = child.stderr.take() {
+            self.spawn_log_reader(stderr, recipe_id.clone(), true, app_handle.clone());
         }
 
         let pid = child.id();
@@ -441,7 +438,7 @@ impl ProcessManager {
 
     pub async fn get_logs(&self) -> Vec<LogLine> {
         let logs = self.logs.lock().await;
-        logs.clone()
+        logs.iter().cloned().collect()
     }
 
     pub async fn clear_logs(&self) {
