@@ -1,13 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { LogLine, ServerStatus } from '$lib/types';
 
-export function startServer(
-  recipeId: string,
-  command: string,
-  modelPath: string,
-  mmprojPath: string,
-): Promise<void> {
-  return invoke('start_server', { recipeId, command, modelPath, mmprojPath });
+export function startServer(recipeId: string): Promise<void> {
+  return invoke('start_server', { recipeId });
 }
 
 export function stopServer(): Promise<void> {

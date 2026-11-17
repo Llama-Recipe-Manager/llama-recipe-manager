@@ -630,7 +630,10 @@ fn resolve_model_path(field: &str, raw: &str, model_dir: &str) -> Result<String,
         return Err(format!("{} contains invalid characters", field));
     }
 
-    let is_absolute = raw.starts_with('/') || raw.starts_with('~') || raw.starts_with('\\');
+    let is_absolute = Path::new(raw).is_absolute()
+        || raw.starts_with('/')
+        || raw.starts_with('~')
+        || raw.starts_with('\\');
     if is_absolute {
         return Ok(expand_tilde(raw));
     }

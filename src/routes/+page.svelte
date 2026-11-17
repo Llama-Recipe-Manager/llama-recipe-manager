@@ -142,12 +142,7 @@
     if (!selected) return;
     error = '';
     try {
-      await serverStore.start(
-        selected.id,
-        selected.command,
-        selected.model_path,
-        selected.mmproj_path,
-      );
+      await serverStore.start(selected.id);
     } catch (e) {
       error = errorMessage(e);
     }

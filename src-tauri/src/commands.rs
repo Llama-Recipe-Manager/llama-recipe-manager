@@ -831,21 +831,19 @@ pub mod server {
         state: tauri::State<'_, AppState>,
         app_handle: tauri::AppHandle,
         recipe_id: String,
-        command: String,
-        model_path: String,
-        mmproj_path: String,
     ) -> Result<(), String> {
-        let settings = {
+        let (recipe, settings) = {
             let db = state.db.lock().map_err(|e| e.to_string())?;
-            db.get_settings()?
+            (db.get_recipe(&recipe_id)?, db.get_settings()?)
         };
+        crate::validate::validate_recipe_command(&recipe.command)?;
         state
             .pm
             .start_server(
-                recipe_id,
-                command,
-                model_path,
-                mmproj_path,
+                recipe.id,
+                recipe.command,
+                recipe.model_path,
+                recipe.mmproj_path,
                 settings,
                 app_handle,
             )
