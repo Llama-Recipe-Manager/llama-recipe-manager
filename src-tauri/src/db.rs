@@ -198,17 +198,19 @@ impl Database {
             ("theme", settings.theme.clone()),
         ];
 
+        let tx = self
+            .conn
+            .unchecked_transaction()
+            .map_err(|e| e.to_string())?;
         for (key, value) in pairs {
-            self.conn
-                .execute(
-                    "INSERT INTO settings (key, value) VALUES (?1, ?2)
-                     ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                    params![key, value],
-                )
-                .map_err(|e| e.to_string())?;
+            tx.execute(
+                "INSERT INTO settings (key, value) VALUES (?1, ?2)
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                params![key, value],
+            )
+            .map_err(|e| e.to_string())?;
         }
-
-        Ok(())
+        tx.commit().map_err(|e| e.to_string())
     }
 
     // ── Recipes ──
