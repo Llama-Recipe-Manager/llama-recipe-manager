@@ -86,8 +86,6 @@ export interface LlamaServerInfo {
   raw_output: string;
 }
 
-export type View = 'list' | 'edit' | 'new' | 'settings';
-
 export type LlamaPathStatus = 'idle' | 'checking' | 'ok' | 'error';
 
 /**
@@ -95,7 +93,7 @@ export type LlamaPathStatus = 'idle' | 'checking' | 'ok' | 'error';
  * main view is rendered. `community` is currently a placeholder; see
  * `docs/PLAN.md`.
  */
-export type Section = 'recipes' | 'community' | 'settings';
+export type Section = 'recipes' | 'models' | 'community' | 'settings';
 
 /**
  * llama.cpp build / accelerator backend. Used to filter community recipes and
