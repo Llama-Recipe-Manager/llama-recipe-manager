@@ -20,6 +20,8 @@ export type ServerPhase = 'idle' | 'starting' | 'ready' | 'stopping';
 /** How often to retry `/health` while the server is `starting`. */
 const HEALTH_POLL_MS = 750;
 
+const MAX_LOG_LINES = 2000;
+
 class ServerStore {
   status = $state<ServerStatus | null>(null);
   phase = $state<ServerPhase>('idle');
@@ -40,6 +42,22 @@ class ServerStore {
   private unlistenLog: UnlistenFn | null = null;
   private unlistenExit: UnlistenFn | null = null;
   private healthAbort: AbortController | null = null;
+  private pendingLogs: LogLine[] = [];
+  private logFlush: number | null = null;
+
+  private flushLogs(): void {
+    this.logFlush = null;
+    if (this.pendingLogs.length === 0) return;
+    const next = this.logs.concat(this.pendingLogs);
+    this.pendingLogs = [];
+    this.logs = next.length > MAX_LOG_LINES ? next.slice(-MAX_LOG_LINES) : next;
+  }
+
+  private dropPendingLogs(): void {
+    if (this.logFlush !== null) cancelAnimationFrame(this.logFlush);
+    this.logFlush = null;
+    this.pendingLogs = [];
+  }
 
   /** True once `/health` has acknowledged this recipe's server. */
   isReady(recipeId: string): boolean {
@@ -127,11 +145,13 @@ class ServerStore {
 
   async clearLogs(): Promise<void> {
     await clearServerLogs();
+    this.dropPendingLogs();
     this.logs = [];
   }
 
   /** Reset client-side log buffer only (used when switching recipes). */
   resetLogView(): void {
+    this.dropPendingLogs();
     this.logs = [];
   }
 
@@ -154,10 +174,8 @@ class ServerStore {
     });
 
     this.unlistenLog = await listen<LogLine>('server-log', (event) => {
-      this.logs = [...this.logs, event.payload];
-      if (this.logs.length > 2000) {
-        this.logs = this.logs.slice(-2000);
-      }
+      this.pendingLogs.push(event.payload);
+      this.logFlush ??= requestAnimationFrame(() => this.flushLogs());
     });
 
     this.unlistenExit = await listen<ServerExit>('server-exit', (event) => {
@@ -172,6 +190,7 @@ class ServerStore {
     this.unlistenStatus = null;
     this.unlistenLog = null;
     this.unlistenExit = null;
+    this.dropPendingLogs();
     this.cancelHealthLoop();
   }
 

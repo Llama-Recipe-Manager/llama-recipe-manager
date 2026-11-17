@@ -3,6 +3,7 @@
   import ConfirmDialog from './ConfirmDialog.svelte';
   import { serverStore } from '$lib/stores/server.svelte';
   import { errorMessage } from '$lib/utils/format';
+  import { logLevel } from '$lib/utils/logs';
 
   let { recipeId, onError }: { recipeId?: string; onError?: (msg: string) => void } = $props();
 
@@ -100,7 +101,9 @@
       <div class="empty">No lines match "{filter}".</div>
     {:else}
       {#each filteredLogs as log, i (i)}
-        <div class="line" class:stderr={log.is_stderr}>{log.line}</div>
+        {@const level = logLevel(log.line)}
+        <!-- prettier-ignore -->
+        <div class="line" class:error={level === 'error'} class:warn={level === 'warn'}>{log.line}</div>
       {/each}
     {/if}
   </div>
@@ -247,8 +250,12 @@
     word-break: break-all;
   }
 
-  .line.stderr {
+  .line.error {
     color: #f87171;
+  }
+
+  .line.warn {
+    color: #fbbf24;
   }
 
   .empty {
