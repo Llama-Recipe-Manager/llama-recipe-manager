@@ -25,7 +25,13 @@
   <div class="sidebar-header">
     <h1 class="app-title">My Recipes</h1>
     <div class="sidebar-actions">
-      <button class="btn-icon" onclick={onNew} title="New Recipe" aria-label="New Recipe">
+      <button
+        class="btn-icon"
+        onclick={onNew}
+        title="New Recipe"
+        aria-label="New Recipe"
+        aria-keyshortcuts="Meta+N Control+N"
+      >
         <svg
           width="18"
           height="18"
@@ -53,7 +59,9 @@
       ><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg
     >
     <input
+      id="recipe-search"
       type="text"
+      aria-keyshortcuts="Meta+F Control+F"
       placeholder="Search recipes..."
       bind:value={searchQuery}
       class="search-input"
