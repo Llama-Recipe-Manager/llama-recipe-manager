@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { ask } from '@tauri-apps/plugin-dialog';
 
@@ -171,6 +171,21 @@
     }
   }
 
+  async function handleShortcut(e: KeyboardEvent) {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+    const key = e.key.toLowerCase();
+    if (key === 'n') {
+      e.preventDefault();
+      goSection('recipes');
+      startNew();
+    } else if (key === 'f') {
+      e.preventDefault();
+      if (section !== 'recipes') goSection('recipes');
+      await tick();
+      document.querySelector<HTMLInputElement>('#recipe-search')?.focus();
+    }
+  }
+
   function setError(msg: string) {
     error = msg;
   }
@@ -194,6 +209,8 @@
     }
   });
 </script>
+
+<svelte:window onkeydown={handleShortcut} />
 
 <div class="app-shell">
   <UpdateBanner />
