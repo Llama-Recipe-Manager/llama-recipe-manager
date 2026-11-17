@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import type { Backend, Capability, CommunityFilters } from '$lib/types';
 
   let { filters = $bindable() }: { filters: CommunityFilters } = $props();
@@ -42,17 +43,7 @@
   </div>
 
   <div class="search-box">
-    <svg
-      class="search-icon"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      ><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg
-    >
+    <Icon name="search" size={14} class="search-icon" />
     <input
       type="text"
       placeholder="Search by GPU or model..."
@@ -144,7 +135,7 @@
     padding: 4px 16px 12px;
   }
 
-  .search-icon {
+  .search-box :global(.search-icon) {
     position: absolute;
     left: 26px;
     top: 50%;

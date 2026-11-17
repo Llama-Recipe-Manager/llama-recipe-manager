@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import FilePickerInput from './FilePickerInput.svelte';
   import ModelBrowser from './ModelBrowser.svelte';
   import ModelDownloader from './ModelDownloader.svelte';
@@ -33,20 +34,7 @@
     onclick={() => (dialog = 'browse')}
     title={kind === 'mmproj' ? 'Scan for mmproj files' : 'Scan model directory'}
   >
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      <line x1="8" y1="11" x2="14" y2="11" />
-      <line x1="11" y1="8" x2="11" y2="14" />
-    </svg>
+    <Icon name="scan" size={14} />
     Scan
   </button>
   <button
@@ -54,19 +42,7 @@
     onclick={() => (dialog = 'download')}
     title="Download from HuggingFace"
   >
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-    >
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
+    <Icon name="download" size={14} />
     Download
   </button>
 </div>

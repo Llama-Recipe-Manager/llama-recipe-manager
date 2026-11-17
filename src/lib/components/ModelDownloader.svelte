@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import { onMount } from 'svelte';
   import { listen } from '@tauri-apps/api/event';
   import {
@@ -127,18 +128,7 @@
     <div class="downloader-header">
       <h3 id="downloader-title">Download {filter === 'mmproj' ? 'mmproj' : 'Model'}</h3>
       <button class="btn-icon" onclick={close} aria-label="Close">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <Icon name="close" strokeWidth={2.5} />
       </button>
     </div>
 

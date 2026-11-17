@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import RecipeListItem from './RecipeListItem.svelte';
   import ServerStatusBar from './ServerStatusBar.svelte';
   import { recipesStore } from '$lib/stores/recipes.svelte';
@@ -36,19 +37,7 @@
         title="Import recipe (.ripe)"
         aria-label="Import recipe"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
+        <Icon name="download" />
       </button>
       <button
         class="btn-icon"
@@ -57,32 +46,13 @@
         aria-label="New Recipe"
         aria-keyshortcuts="Meta+N Control+N"
       >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          ><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg
-        >
+        <Icon name="plus" size={18} />
       </button>
     </div>
   </div>
 
   <div class="search-box">
-    <svg
-      class="search-icon"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      ><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg
-    >
+    <Icon name="search" size={14} class="search-icon" />
     <input
       id="recipe-search"
       type="text"
@@ -150,7 +120,7 @@
     padding: 4px 16px 12px;
   }
 
-  .search-icon {
+  .search-box :global(.search-icon) {
     position: absolute;
     left: 26px;
     top: 50%;
