@@ -122,9 +122,10 @@ pub mod models {
     use futures_util::StreamExt;
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc, Mutex, OnceLock};
+    use std::time::SystemTime;
     use tauri::Emitter;
     use tokio::fs;
     use tokio::io::AsyncWriteExt;
@@ -190,6 +191,37 @@ pub mod models {
         GgufKind::Model
     }
 
+    type KindCache = Mutex<HashMap<PathBuf, (u64, Option<SystemTime>, GgufKind)>>;
+
+    /// Header parses keyed by path and invalidated on size or mtime change, so
+    /// paging and rescans don't re-read every file.
+    fn kind_cache() -> &'static KindCache {
+        static CACHE: OnceLock<KindCache> = OnceLock::new();
+        CACHE.get_or_init(KindCache::default)
+    }
+
+    async fn cached_gguf_kind(path: &Path, meta: &std::fs::Metadata) -> GgufKind {
+        let stamp = (meta.len(), meta.modified().ok());
+        if let Some(&(len, modified, kind)) = kind_cache()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(path)
+        {
+            if (len, modified) == stamp {
+                return kind;
+            }
+        }
+        let probe = path.to_path_buf();
+        let kind = tokio::task::spawn_blocking(move || detect_gguf_kind(&probe))
+            .await
+            .unwrap_or(GgufKind::Model);
+        kind_cache()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(path.to_path_buf(), (stamp.0, stamp.1, kind));
+        kind
+    }
+
     /// Walk a directory tree (up to `max_depth` levels deep) collecting `.gguf`
     /// files, returning the total match count plus only the slice for the
     /// requested page.
@@ -236,10 +268,7 @@ pub mod models {
                 if path.extension().is_none_or(|ext| ext != "gguf") {
                     continue;
                 }
-                let probe = path.clone();
-                let kind = tokio::task::spawn_blocking(move || detect_gguf_kind(&probe))
-                    .await
-                    .unwrap_or(GgufKind::Model);
+                let kind = cached_gguf_kind(&path, &ft).await;
                 if let Some(expected) = filter {
                     if kind != expected {
                         continue;
@@ -609,7 +638,7 @@ pub mod models {
     mod tests {
         use std::path::PathBuf;
 
-        use super::{download_target, scan_gguf_files, GgufKind};
+        use super::{cached_gguf_kind, download_target, kind_cache, scan_gguf_files, GgufKind};
 
         /// Create a temp dir with `count` empty `.gguf` files. Empty files
         /// aren't parseable as GGUF, so `detect_gguf_kind` classifies them all
@@ -728,6 +757,28 @@ pub mod models {
             let (total2, _) =
                 rt.block_on(scan_gguf_files(dir.path().to_path_buf(), 2, None, 1, 100));
             assert_eq!(total2, 2);
+        }
+
+        #[test]
+        fn kind_cache_is_invalidated_when_the_file_changes() {
+            let dir = tempfile::tempdir().expect("tempdir");
+            let path = dir.path().join("vision.gguf");
+            std::fs::write(&path, b"x").expect("write");
+            let meta = std::fs::metadata(&path).expect("metadata");
+            kind_cache().lock().unwrap().insert(
+                path.clone(),
+                (meta.len(), meta.modified().ok(), GgufKind::Mmproj),
+            );
+
+            let rt = tokio::runtime::Runtime::new().expect("runtime");
+            assert_eq!(
+                rt.block_on(cached_gguf_kind(&path, &meta)),
+                GgufKind::Mmproj
+            );
+
+            std::fs::write(&path, b"changed").expect("rewrite");
+            let meta = std::fs::metadata(&path).expect("metadata");
+            assert_eq!(rt.block_on(cached_gguf_kind(&path, &meta)), GgufKind::Model);
         }
 
         #[test]
