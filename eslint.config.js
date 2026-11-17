@@ -9,6 +9,7 @@ export default [
   {
     ignores: [
       'build/**',
+      'coverage/**',
       'dist/**',
       '.svelte-kit/**',
       'node_modules/**',
