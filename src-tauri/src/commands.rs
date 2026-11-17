@@ -164,7 +164,6 @@ pub mod models {
         let mut page_items = Vec::with_capacity(page_size);
         let start = (page.saturating_sub(1)) * page_size;
         let end = start + page_size;
-        // Reuse a single buffer for entry names to avoid re-allocating.
         let mut stack = vec![(root, max_depth)];
 
         while let Some((dir, depth)) = stack.pop() {
@@ -188,7 +187,10 @@ pub mod models {
                 if path.extension().is_none_or(|ext| ext != "gguf") {
                     continue;
                 }
-                let kind = detect_gguf_kind(&path);
+                let probe = path.clone();
+                let kind = tokio::task::spawn_blocking(move || detect_gguf_kind(&probe))
+                    .await
+                    .unwrap_or(GgufKind::Model);
                 if let Some(expected) = filter {
                     if kind != expected {
                         continue;
@@ -414,10 +416,15 @@ pub mod models {
             .map_err(|e| format!("Failed to create download directory: {}", e))?;
 
         let repo = repo_id.trim().trim_end_matches('/');
-        let url = format!("https://huggingface.co/{}/resolve/main/{}", repo, filename);
+        let mut url = reqwest::Url::parse("https://huggingface.co/").map_err(|e| e.to_string())?;
+        url.path_segments_mut()
+            .map_err(|()| "Invalid download URL".to_string())?
+            .extend(repo.split('/'))
+            .extend(["resolve", "main"])
+            .extend(filename.split('/'));
 
         let client = reqwest::Client::new();
-        let mut req = client.get(&url);
+        let mut req = client.get(url);
         let token = hf_token.trim();
         if !token.is_empty() {
             req = req.header("Authorization", format!("Bearer {}", token));
@@ -446,6 +453,7 @@ pub mod models {
 
             let mut bytes_downloaded: u64 = 0;
             let mut stream = resp.bytes_stream();
+            let mut last_emit = std::time::Instant::now();
 
             while let Some(chunk_result) = stream.next().await {
                 let chunk = chunk_result.map_err(|e| format!("Download error: {}", e))?;
@@ -454,7 +462,11 @@ pub mod models {
                     .map_err(|e| format!("Write error: {}", e))?;
                 bytes_downloaded += chunk.len() as u64;
 
-                if total_bytes > 0 {
+                let done = bytes_downloaded >= total_bytes;
+                if total_bytes > 0
+                    && (done || last_emit.elapsed() >= std::time::Duration::from_millis(100))
+                {
+                    last_emit = std::time::Instant::now();
                     let _ = app_handle.emit(
                         "download-progress",
                         DownloadProgress {
