@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte';
   import { onDestroy, onMount, tick } from 'svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { ask } from '@tauri-apps/plugin-dialog';
@@ -308,19 +309,7 @@
       {:else}
         <div class="empty-state">
           <div class="empty-icon">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            >
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline
-                points="14,2 14,8 20,8"
-              /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" />
-            </svg>
+            <Icon name="file-plus" size={48} strokeWidth={1.5} />
           </div>
           <h2>No recipe selected</h2>
           <p>Select a recipe from the sidebar or create a new one to get started.</p>

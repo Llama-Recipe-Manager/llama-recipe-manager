@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import { onDestroy } from 'svelte';
   import { openUrl } from '@tauri-apps/plugin-opener';
 
@@ -154,32 +155,10 @@
         aria-label="Edit"
         disabled={isThisActive}
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg>
+        <Icon name="edit" />
       </button>
       <button class="btn-icon" onclick={handleDuplicate} title="Duplicate" aria-label="Duplicate">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <rect x="9" y="9" width="13" height="13" rx="2" />
-          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-        </svg>
+        <Icon name="copy" />
       </button>
       <button
         class="btn-icon"
@@ -187,19 +166,7 @@
         title="Export (.ripe)"
         aria-label="Export"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
+        <Icon name="upload" />
       </button>
       <button
         class="btn-icon danger-icon"
@@ -208,20 +175,7 @@
         aria-label="Delete"
         disabled={isThisActive}
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <polyline points="3,6 5,6 21,6" />
-          <path
-            d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"
-          />
-        </svg>
+        <Icon name="trash" />
       </button>
     </div>
   </div>
@@ -235,18 +189,7 @@
         >
       </div>
       <button class="crash-dismiss" onclick={() => serverStore.dismissExit()} aria-label="Dismiss">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <Icon name="close" size={14} strokeWidth={2.5} />
       </button>
     </div>
   {/if}
@@ -287,32 +230,9 @@
           aria-label={copied === 'endpoint' ? 'Endpoint URL copied' : 'Copy endpoint URL'}
         >
           {#if copied === 'endpoint'}
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Icon name="check" size={12} strokeWidth={2.5} />
           {:else}
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-            </svg>
+            <Icon name="copy" size={12} />
           {/if}
         </button>
       </div>
@@ -322,19 +242,7 @@
       {#if isThisActive}
         {#if webUiAvailable}
           <button class="btn primary" onclick={handleOpenWebUi}>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            >
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <Icon name="external" size={14} />
             Open Web UI
           </button>
         {/if}
@@ -349,9 +257,7 @@
         </button>
       {:else}
         <button class="btn primary large" onclick={onStart} disabled={blockedByOther}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="6,4 20,12 6,20" />
-          </svg>
+          <Icon name="play" size={14} />
           Start Server
         </button>
       {/if}
@@ -401,33 +307,10 @@
         aria-label={copied === 'command' ? 'Full command copied' : 'Copy full command'}
       >
         {#if copied === 'command'}
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <Icon name="check" size={12} strokeWidth={2.5} />
           Copied
         {:else}
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="9" y="9" width="13" height="13" rx="2" />
-            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-          </svg>
+          <Icon name="copy" size={12} />
           Copy
         {/if}
       </button>

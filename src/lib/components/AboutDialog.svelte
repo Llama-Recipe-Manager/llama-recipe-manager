@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import { getTauriVersion, getVersion } from '@tauri-apps/api/app';
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { onMount } from 'svelte';
@@ -109,18 +110,7 @@
         </div>
       </div>
       <button class="close-btn" onclick={onClose} title="Close" aria-label="Close About dialog">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
+        <Icon name="close" />
       </button>
     </header>
 
