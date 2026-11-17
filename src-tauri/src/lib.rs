@@ -61,6 +61,7 @@ pub fn run() {
             commands::models::cleanup_orphan_parts,
             commands::models::list_hf_model_files,
             commands::models::download_hf_model,
+            commands::models::cancel_download,
             commands::server::start_server,
             commands::server::stop_server,
             commands::server::get_server_status,

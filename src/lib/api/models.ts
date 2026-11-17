@@ -57,3 +57,9 @@ export function downloadHfModel(
 ): Promise<string> {
   return invoke('download_hf_model', { repoId, filename, hfToken, destDir });
 }
+
+export const DOWNLOAD_CANCELLED = 'Download cancelled';
+
+export function cancelDownload(filename: string, destDir: string): Promise<void> {
+  return invoke('cancel_download', { filename, destDir });
+}

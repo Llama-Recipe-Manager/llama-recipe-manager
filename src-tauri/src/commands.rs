@@ -73,9 +73,13 @@ pub mod recipes {
 
 pub mod models {
     use crate::process;
+    use crate::state::AppState;
     use futures_util::StreamExt;
     use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
     use std::path::PathBuf;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::{Arc, Mutex};
     use tauri::Emitter;
     use tokio::fs;
     use tokio::io::AsyncWriteExt;
@@ -382,6 +386,46 @@ pub mod models {
         }
     }
 
+    pub const DOWNLOAD_CANCELLED: &str = "Download cancelled";
+
+    /// Resolve the destination directory and a traversal-safe file name.
+    fn download_target(dest_dir: &str, filename: &str) -> Result<(PathBuf, String), String> {
+        let dest = PathBuf::from(process::expand_tilde_pub(dest_dir));
+        let safe_name = PathBuf::from(filename)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .ok_or_else(|| "Invalid filename".to_string())?;
+        Ok((dest, safe_name))
+    }
+
+    /// Removes the download's cancel flag however `download_hf_model` exits.
+    struct DownloadRegistration<'a> {
+        downloads: &'a Mutex<HashMap<PathBuf, Arc<AtomicBool>>>,
+        key: PathBuf,
+    }
+
+    impl Drop for DownloadRegistration<'_> {
+        fn drop(&mut self) {
+            if let Ok(mut active) = self.downloads.lock() {
+                active.remove(&self.key);
+            }
+        }
+    }
+
+    #[tauri::command]
+    pub fn cancel_download(
+        state: tauri::State<'_, AppState>,
+        filename: String,
+        dest_dir: String,
+    ) -> Result<(), String> {
+        let (dest, safe_name) = download_target(&dest_dir, &filename)?;
+        let active = state.downloads.lock().map_err(|e| e.to_string())?;
+        if let Some(flag) = active.get(&dest.join(safe_name)) {
+            flag.store(true, Ordering::Relaxed);
+        }
+        Ok(())
+    }
+
     /// Download a model file from HuggingFace with progress events.
     ///
     /// Downloads to a `.gguf.part` temp file first, then atomically renames
@@ -389,23 +433,29 @@ pub mod models {
     /// orphaned `.part` file will be cleaned up on the next startup scan.
     #[tauri::command]
     pub async fn download_hf_model(
+        state: tauri::State<'_, AppState>,
         app_handle: tauri::AppHandle,
         repo_id: String,
         filename: String,
         hf_token: String,
         dest_dir: String,
     ) -> Result<String, String> {
-        let expanded_dest = process::expand_tilde_pub(&dest_dir);
-        let dest = PathBuf::from(&expanded_dest);
-
-        // Sanitize filename — prevent path traversal.
-        let fname = PathBuf::from(&filename);
-        let safe_name = fname
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .ok_or_else(|| "Invalid filename".to_string())?;
-
+        let (dest, safe_name) = download_target(&dest_dir, &filename)?;
         let final_path = dest.join(&safe_name);
+
+        let cancel = Arc::new(AtomicBool::new(false));
+        {
+            let mut active = state.downloads.lock().map_err(|e| e.to_string())?;
+            if active.contains_key(&final_path) {
+                return Err(format!("{} is already downloading", safe_name));
+            }
+            active.insert(final_path.clone(), cancel.clone());
+        }
+        let _registration = DownloadRegistration {
+            downloads: &state.downloads,
+            key: final_path.clone(),
+        };
+
         // Download to a `.part` temp file first so a kill mid-download
         // doesn't leave a corrupt `.gguf` in the model directory.
         let part_path = dest.join(format!("{}.part", safe_name));
@@ -456,6 +506,9 @@ pub mod models {
             let mut last_emit = std::time::Instant::now();
 
             while let Some(chunk_result) = stream.next().await {
+                if cancel.load(Ordering::Relaxed) {
+                    return Err(DOWNLOAD_CANCELLED.to_string());
+                }
                 let chunk = chunk_result.map_err(|e| format!("Download error: {}", e))?;
                 file.write_all(&chunk)
                     .await
@@ -511,7 +564,7 @@ pub mod models {
     mod tests {
         use std::path::PathBuf;
 
-        use super::{scan_gguf_files, GgufKind};
+        use super::{download_target, scan_gguf_files, GgufKind};
 
         /// Create a temp dir with `count` empty `.gguf` files. Empty files
         /// aren't parseable as GGUF, so `detect_gguf_kind` classifies them all
@@ -634,33 +687,26 @@ pub mod models {
 
         #[test]
         fn download_sanitizes_path_traversal() {
-            let malicious = "../../etc/passwd".to_string();
-            let safe = PathBuf::from(&malicious)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap();
+            let (dest, safe) = download_target("/models", "../../etc/passwd").unwrap();
             assert_eq!(safe, "passwd");
-            assert_ne!(safe, "../../etc/passwd");
+            assert_eq!(dest, PathBuf::from("/models"));
         }
 
         #[test]
         fn download_keeps_simple_filename() {
-            let filename = "qwen3-35b-q4.gguf".to_string();
-            let safe = PathBuf::from(&filename)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap();
+            let (_, safe) = download_target("/models", "qwen3-35b-q4.gguf").unwrap();
             assert_eq!(safe, "qwen3-35b-q4.gguf");
         }
 
         #[test]
         fn download_strips_subdirectory_prefix() {
-            let filename = "gguf/qwen3-35b-q4.gguf".to_string();
-            let safe = PathBuf::from(&filename)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap();
+            let (_, safe) = download_target("/models", "gguf/qwen3-35b-q4.gguf").unwrap();
             assert_eq!(safe, "qwen3-35b-q4.gguf");
+        }
+
+        #[test]
+        fn download_rejects_names_without_a_file_component() {
+            assert!(download_target("/models", "..").is_err());
         }
     }
 }
