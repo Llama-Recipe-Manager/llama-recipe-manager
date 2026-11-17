@@ -151,12 +151,6 @@ class ServerStore {
     this.logs = [];
   }
 
-  /** Reset client-side log buffer only (used when switching recipes). */
-  resetLogView(): void {
-    this.dropPendingLogs();
-    this.logs = [];
-  }
-
   async subscribe(): Promise<void> {
     this.unlistenStatus = await listen<ServerStatus>('server-status', (event) => {
       const s = event.payload;

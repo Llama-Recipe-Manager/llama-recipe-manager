@@ -1,203 +1,154 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@custom-variant data-open (&:where([data-state='open'], [data-open]:not([data-open='false'])));
+@custom-variant data-closed (&:where([data-state='closed'], [data-closed]:not([data-closed='false'])));
+@custom-variant data-checked (&:where([data-state='checked'], [data-checked]:not([data-checked='false'])));
+@custom-variant data-unchecked (&:where([data-state='unchecked'], [data-unchecked]:not([data-unchecked='false'])));
+@custom-variant data-active (&:where([data-state='active'], [data-active]:not([data-active='false'])));
+@custom-variant data-selected (&:where([data-selected]:not([data-selected='false'])));
+@custom-variant data-disabled (&:where([data-disabled]:not([data-disabled='false'])));
+@custom-variant data-horizontal (&:where([data-orientation='horizontal']));
+@custom-variant data-vertical (&:where([data-orientation='vertical']));
+
+/* Paper (light) */
 :root {
-  color-scheme: light dark;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f7;
-  --bg-tertiary: #e8e8ed;
-  --bg-sidebar: #f0f0f2;
-  --text-primary: #1d1d1f;
-  --text-secondary: #6e6e73;
-  --text-tertiary: #86868b;
-  --border: #d2d2d7;
-  --accent: #0071e3;
-  --accent-hover: #0077ed;
-  --danger: #ff3b30;
-  --danger-hover: #ff453a;
-  --success: #34c759;
-  --warning: #ff9f0a;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  color-scheme: light;
+  --radius: 0.625rem;
+  --background: #f7f6f3;
+  --foreground: #1f1e1b;
+  --card: #ffffff;
+  --card-foreground: #1f1e1b;
+  --popover: #ffffff;
+  --popover-foreground: #1f1e1b;
+  --primary: #1f7a5c;
+  --primary-foreground: #ffffff;
+  --secondary: #efede8;
+  --secondary-foreground: #1f1e1b;
+  --muted: #f0eee9;
+  --muted-foreground: #6b675f;
+  --faint: #8f8b82;
+  --accent: #ebe8e1;
+  --accent-foreground: #1f1e1b;
+  --destructive: #c2413b;
+  --success: #1f7a5c;
+  --warning: #b7791f;
+  --border: #e6e3dc;
+  --input: #dcd8cf;
+  --ring: #1f7a5c;
+  --sidebar: #fbfaf8;
+  --code: #f3f1ec;
 }
 
-:root[data-theme='dark'] {
-  --bg-primary: #1c1c1e;
-  --bg-secondary: #2c2c2e;
-  --bg-tertiary: #3a3a3c;
-  --bg-sidebar: #252527;
-  --text-primary: #f5f5f7;
-  --text-secondary: #a1a1a6;
-  --text-tertiary: #6e6e73;
-  --border: #3a3a3c;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+/* Graphite (dark) */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #0c0c0e;
+  --foreground: #ededf0;
+  --card: #131316;
+  --card-foreground: #ededf0;
+  --popover: #18181c;
+  --popover-foreground: #ededf0;
+  --primary: #7c6cff;
+  --primary-foreground: #ffffff;
+  --secondary: #1d1d22;
+  --secondary-foreground: #ededf0;
+  --muted: #1a1a1f;
+  --muted-foreground: #a0a0ab;
+  --faint: #6b6b76;
+  --accent: #202026;
+  --accent-foreground: #ededf0;
+  --destructive: #f2555a;
+  --success: #3fcf8e;
+  --warning: #f5a524;
+  --border: #26262d;
+  --input: #30303a;
+  --ring: #7c6cff;
+  --sidebar: #111114;
+  --code: #0f0f12;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg-primary: #1c1c1e;
-    --bg-secondary: #2c2c2e;
-    --bg-tertiary: #3a3a3c;
-    --bg-sidebar: #252527;
-    --text-primary: #f5f5f7;
-    --text-secondary: #a1a1a6;
-    --text-tertiary: #6e6e73;
-    --border: #3a3a3c;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+@theme inline {
+  --font-sans: 'Inter Variable', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'SF Mono', Consolas, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-code: var(--code);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    @apply h-full overflow-hidden bg-background text-foreground antialiased;
+    user-select: none;
+  }
+  body {
+    font-size: 13px;
+  }
+  input,
+  textarea,
+  [contenteditable='true'],
+  pre,
+  code {
+    user-select: text;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
 }
 
-html,
-body {
-  height: 100%;
-  overflow: hidden;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  user-select: none;
-}
-
-button {
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-  color: inherit;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 7px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn.small {
-  padding: 5px 12px;
-  font-size: 12px;
-}
-
-.btn.large {
-  padding: 9px 18px;
-  font-size: 14px;
-}
-
-.btn.primary {
-  background: var(--accent);
-  color: white;
-}
-
-.btn.primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.btn.secondary {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.btn.secondary:hover:not(:disabled) {
-  background: var(--border);
-}
-
-.btn.danger {
-  background: var(--danger);
-  color: white;
-}
-
-.btn.danger:hover:not(:disabled) {
-  background: var(--danger-hover);
-}
-
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  transition: all 0.15s;
-}
-
-.btn-icon:hover:not(:disabled) {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.btn-icon:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-input,
-textarea,
-select {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-/* Force the OS-native select popup to match the app's forced theme.
-   Without this, the dropdown stays dark when the system is in dark mode
-   even if the app is forcing light. */
-select {
-  color-scheme: var(--select-color-scheme, light dark);
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: var(--accent);
-}
-
-textarea {
-  resize: vertical;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+@utility pulse-ring {
+  animation: pulse-ring 1.6s ease-out infinite;
 }
