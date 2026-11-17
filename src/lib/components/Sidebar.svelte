@@ -180,20 +180,4 @@
     color: var(--text-tertiary);
     font-size: 13px;
   }
-
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    transition: all 0.15s;
-  }
-
-  .btn-icon:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
 </style>

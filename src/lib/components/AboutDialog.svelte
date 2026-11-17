@@ -421,35 +421,7 @@
   }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     padding: 6px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .btn.primary {
-    background: var(--accent);
-    color: white;
-  }
-  .btn.primary:hover {
-    filter: brightness(1.08);
-  }
-
-  .btn.secondary {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-  .btn.secondary:hover:not(:disabled) {
-    background: var(--bg-quaternary, var(--bg-tertiary));
-  }
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   .foot {

@@ -90,15 +90,6 @@
     border-radius: var(--radius-sm);
   }
 
-  .btn.primary {
-    background: var(--accent);
-    color: white;
-  }
-
-  .btn.primary:hover {
-    background: var(--accent-hover);
-  }
-
   .btn.ghost {
     color: var(--text-secondary);
   }

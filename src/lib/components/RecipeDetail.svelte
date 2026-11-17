@@ -796,65 +796,11 @@
   }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     gap: 6px;
+  }
+
+  .btn:not(.large) {
     padding: 7px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .btn.large {
-    padding: 9px 18px;
-    font-size: 14px;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn.primary {
-    background: var(--accent);
-    color: white;
-  }
-
-  .btn.primary:hover:not(:disabled) {
-    background: var(--accent-hover);
-  }
-
-  .btn.danger {
-    background: var(--danger);
-    color: white;
-  }
-
-  .btn.danger:hover {
-    background: var(--danger-hover);
-  }
-
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    transition: all 0.15s;
-  }
-
-  .btn-icon:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  .btn-icon:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
   }
 
   .btn-icon.danger-icon:hover:not(:disabled) {

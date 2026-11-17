@@ -403,21 +403,7 @@
   }
 
   .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     width: 30px;
     height: 30px;
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    transition: all 0.15s;
-    border: none;
-    background: none;
-    cursor: pointer;
-  }
-
-  .btn-icon:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
   }
 </style>
