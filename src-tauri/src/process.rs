@@ -206,6 +206,7 @@ impl ProcessManager {
 
         let (program, args) =
             Self::build_command(&recipe_command, &model_path, &mmproj_path, &settings)?;
+        ensure_port_free(&settings.host, settings.port)?;
 
         let mut cmd = Command::new(&program);
         cmd.args(&args)
@@ -600,6 +601,38 @@ pub fn augment_gui_path() {
     }
 }
 
+/// Fail fast with a readable error instead of letting llama-server die on
+/// bind. Both probes are needed: with `SO_REUSEADDR` (set by std on Unix),
+/// macOS lets a specific-address bind succeed while another process holds
+/// the wildcard address.
+fn ensure_port_free(host: &str, port: u16) -> Result<(), String> {
+    let in_use = Err(format!(
+        "Port {port} is already in use. Stop the process using it or choose another port in Settings."
+    ));
+    let host = if host.is_empty() || host == "0.0.0.0" {
+        "127.0.0.1"
+    } else {
+        host
+    };
+    if let Err(e) = std::net::TcpListener::bind((host, port)) {
+        return if e.kind() == std::io::ErrorKind::AddrInUse {
+            in_use
+        } else {
+            Ok(())
+        };
+    }
+    let addrs = std::net::ToSocketAddrs::to_socket_addrs(&(host, port))
+        .map(Iterator::collect::<Vec<_>>)
+        .unwrap_or_default();
+    if addrs
+        .iter()
+        .any(|a| std::net::TcpStream::connect_timeout(a, Duration::from_millis(200)).is_ok())
+    {
+        return in_use;
+    }
+    Ok(())
+}
+
 pub fn expand_tilde_pub(path: &str) -> String {
     if path.starts_with("~/") {
         if let Ok(home) = std::env::var("HOME") {
@@ -671,4 +704,22 @@ fn lexical_normalize(path: &Path) -> PathBuf {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ensure_port_free;
+
+    #[test]
+    fn reports_a_port_that_is_already_bound() {
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("bind");
+        let port = listener.local_addr().unwrap().port();
+        assert!(ensure_port_free("127.0.0.1", port)
+            .unwrap_err()
+            .contains("already in use"));
+        assert!(ensure_port_free("0.0.0.0", port).is_err());
+
+        drop(listener);
+        assert!(ensure_port_free("127.0.0.1", port).is_ok());
+    }
 }
