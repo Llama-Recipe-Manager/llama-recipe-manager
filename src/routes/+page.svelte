@@ -19,8 +19,9 @@
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { updaterStore } from '$lib/stores/updater.svelte';
-  import type { CommunityFilters, Section, View } from '$lib/types';
+  import type { CommunityFilters, Recipe, Section, View } from '$lib/types';
   import { errorMessage } from '$lib/utils/format';
+  import { exportRecipeToFile, importRecipeFromFile } from '$lib/utils/ripe';
 
   let section = $state<Section>('recipes');
   let view = $state<View>('list');
@@ -181,6 +182,26 @@
     }
   }
 
+  async function handleExport(recipe: Recipe) {
+    try {
+      await exportRecipeToFile(recipe);
+    } catch (e) {
+      error = errorMessage(e);
+    }
+  }
+
+  async function handleImport() {
+    try {
+      const imported = await importRecipeFromFile();
+      if (!imported) return;
+      await recipesStore.refresh();
+      recipesStore.select(imported.id);
+      view = 'list';
+    } catch (e) {
+      error = errorMessage(e);
+    }
+  }
+
   function setError(msg: string) {
     error = msg;
   }
@@ -224,6 +245,8 @@
         activeId={view === 'list' ? recipesStore.selectedId : null}
         onSelect={selectRecipe}
         onNew={startNew}
+        onImport={handleImport}
+        onExport={handleExport}
         onStop={handleStop}
       />
     {:else if section === 'community' && FEATURES.community}
@@ -260,6 +283,7 @@
           onStop={handleStop}
           {onDeleted}
           {onDuplicated}
+          onExport={handleExport}
           onError={setError}
         />
       {:else}

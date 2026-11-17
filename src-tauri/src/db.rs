@@ -9,7 +9,10 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-use crate::validate::{validate_recipe_command, validate_recipe_fields};
+use crate::validate::{
+    validate_recipe_command, validate_recipe_command_for_source, validate_recipe_fields,
+    RecipeSource,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Recipe {
@@ -346,6 +349,37 @@ impl Database {
         }
 
         Ok(())
+    }
+
+    /// Create a recipe from an untrusted source (e.g. a shared `.ripe` file).
+    /// Enforces the community flag policy and renames on name clashes.
+    pub fn import_recipe(&self, mut input: CreateRecipe) -> Result<Recipe, String> {
+        validate_recipe_command_for_source(&input.command, RecipeSource::Community)?;
+        input.name = self.unused_name(input.name.trim())?;
+        self.create_recipe(input)
+    }
+
+    fn unused_name(&self, base: &str) -> Result<String, String> {
+        let mut candidate = base.to_string();
+        for n in 1.. {
+            let taken: bool = self
+                .conn
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM recipes WHERE name = ?1)",
+                    params![candidate],
+                    |row| row.get(0),
+                )
+                .map_err(|e| e.to_string())?;
+            if !taken {
+                break;
+            }
+            candidate = if n == 1 {
+                format!("{} (imported)", base)
+            } else {
+                format!("{} (imported {})", base, n)
+            };
+        }
+        Ok(candidate)
     }
 
     pub fn duplicate_recipe(&self, id: &str) -> Result<Recipe, String> {

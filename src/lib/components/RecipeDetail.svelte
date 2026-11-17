@@ -22,9 +22,11 @@
     onStop,
     onDeleted,
     onDuplicated,
+    onExport,
     onError,
   }: {
     recipe: Recipe;
+    onExport: (recipe: Recipe) => void;
     onEdit: () => void;
     onStart: () => void;
     onStop: () => void;
@@ -177,6 +179,26 @@
         >
           <rect x="9" y="9" width="13" height="13" rx="2" />
           <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+        </svg>
+      </button>
+      <button
+        class="btn-icon"
+        onclick={() => onExport(recipe)}
+        title="Export (.ripe)"
+        aria-label="Export"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
       </button>
       <button

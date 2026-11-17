@@ -24,3 +24,11 @@ export function deleteRecipe(id: string): Promise<void> {
 export function duplicateRecipe(id: string): Promise<Recipe> {
   return invoke('duplicate_recipe', { id });
 }
+
+export function exportRecipe(id: string, path: string): Promise<void> {
+  return invoke('export_recipe', { id, path });
+}
+
+export function importRecipe(path: string): Promise<Recipe> {
+  return invoke('import_recipe', { path });
+}
