@@ -26,7 +26,12 @@
           action: () => appStore.togglePin(recipe),
         },
         { id: 'duplicate', text: 'Duplicate', action: () => appStore.duplicate(recipe) },
-        { id: 'export', text: 'Export…', action: () => appStore.exportRecipe(recipe) },
+        { id: 'export', text: 'Export .ripe…', action: () => appStore.exportRecipe(recipe) },
+        {
+          id: 'export-ini',
+          text: 'Export as INI preset…',
+          action: () => appStore.exportRecipeIni(recipe),
+        },
         { item: 'Separator' },
         { id: 'delete', text: 'Delete…', action: () => appStore.remove(recipe) },
       ],

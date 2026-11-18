@@ -8,6 +8,7 @@ import { serverStore } from '$lib/stores/server.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { Recipe, Section } from '$lib/types';
 import { notifyError } from '$lib/utils/notify';
+import { exportAllRecipesToIni, exportRecipeToIni } from '$lib/utils/ini';
 import { exportRecipeToFile, importRecipeFromFile } from '$lib/utils/ripe';
 import { webuiUrl } from '$lib/utils/server';
 
@@ -144,6 +145,22 @@ class AppStore {
   async exportRecipe(recipe: Recipe): Promise<void> {
     try {
       await exportRecipeToFile(recipe);
+    } catch (e) {
+      notifyError(e);
+    }
+  }
+
+  async exportRecipeIni(recipe: Recipe): Promise<void> {
+    try {
+      await exportRecipeToIni(recipe);
+    } catch (e) {
+      notifyError(e);
+    }
+  }
+
+  async exportAllRecipesIni(): Promise<void> {
+    try {
+      await exportAllRecipesToIni();
     } catch (e) {
       notifyError(e);
     }

@@ -29,6 +29,7 @@ pub mod recipes {
     use std::path::PathBuf;
 
     use crate::db::{CreateRecipe, Recipe, UpdateRecipe};
+    use crate::ini;
     use crate::ripe;
     use crate::state::AppState;
 
@@ -96,6 +97,35 @@ pub mod recipes {
         };
         let path = with_ripe_extension(&path);
         std::fs::write(&path, ripe::to_toml(recipe)?)
+            .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
+    }
+
+    #[tauri::command]
+    pub fn export_recipe_ini(
+        state: tauri::State<AppState>,
+        id: String,
+        path: String,
+    ) -> Result<(), String> {
+        let recipe = {
+            let db = state.db.lock().map_err(|e| e.to_string())?;
+            db.get_recipe(&id)?
+        };
+        let path = ini::with_ini_extension(&path);
+        std::fs::write(&path, ini::to_ini(&recipe)?)
+            .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
+    }
+
+    #[tauri::command]
+    pub fn export_all_recipes_ini(
+        state: tauri::State<AppState>,
+        path: String,
+    ) -> Result<(), String> {
+        let recipes = {
+            let db = state.db.lock().map_err(|e| e.to_string())?;
+            db.list_recipes()?
+        };
+        let path = ini::with_ini_extension(&path);
+        std::fs::write(&path, ini::all_to_ini(&recipes)?)
             .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
     }
 
