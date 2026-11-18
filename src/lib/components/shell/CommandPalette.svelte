@@ -3,6 +3,7 @@
   import Boxes from '@lucide/svelte/icons/boxes';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import FileDown from '@lucide/svelte/icons/file-down';
+  import FileUp from '@lucide/svelte/icons/file-up';
   import Info from '@lucide/svelte/icons/info';
   import Pencil from '@lucide/svelte/icons/pencil';
   import Play from '@lucide/svelte/icons/play';
@@ -39,6 +40,12 @@
       </Command.Item>
       <Command.Item value="import recipe ripe" onSelect={() => run(() => appStore.importRecipe())}>
         <FileDown /> Import recipe…
+      </Command.Item>
+      <Command.Item
+        value="export all recipes ini"
+        onSelect={() => run(() => appStore.exportAllRecipesIni())}
+      >
+        <FileUp /> Export all recipes as INI…
       </Command.Item>
       {#if active}
         <Command.Item value="stop server" onSelect={() => run(() => appStore.stop())}>

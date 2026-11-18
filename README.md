@@ -22,8 +22,25 @@ Save your `llama.cpp` invocations as named _recipes_, switch between them in one
 
 - **Recipe-first** — named bundles of `llama-server` flags, switch models and GPU layouts in one click
 - **Local-first** — no account, no telemetry, no network dependency. Recipes stored in SQLite
+- **Preset & INI Export** — export recipes directly to `llama-server --models-preset` compatible `.ini` files or `.ripe` bundles
 - **Safety rails** — flag deny-list, path confinement, input validation. See [SECURITY.md](./SECURITY.md)
 - **Cross-platform** — macOS, Linux, Windows with native theming
+
+## Export & Presets
+
+Llama Recipe Manager supports exporting your configurations for direct use with `llama-server`:
+
+- **Single Preset Export**: Right-click any recipe in the sidebar or open the 3-dot menu in Recipe Detail, then select **Export as INI preset…** (or **Export .ripe…** for app-to-app sharing).
+- **Export All to INI**: Click the **Export All** button in the Recipes sidebar header or run `export all recipes ini` from the Command Palette (`Ctrl+K` / `Cmd+K`) to generate a complete multi-model preset file with shared global `[*]` defaults.
+- **Run Directly with `llama-server`**:
+  ```bash
+  llama-server --models-preset ./llama_models.ini
+  ```
+- **CLI Batch Export Tool**:
+  Export directly from the local SQLite database without opening the GUI:
+  ```bash
+  python3 scripts/export-recipes-ini.py [path/to/recipes.db] [output.ini]
+  ```
 
 ## Install
 

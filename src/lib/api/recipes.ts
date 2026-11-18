@@ -33,6 +33,14 @@ export function exportRecipe(id: string, path: string): Promise<void> {
   return invoke('export_recipe', { id, path });
 }
 
+export function exportRecipeIni(id: string, path: string): Promise<void> {
+  return invoke('export_recipe_ini', { id, path });
+}
+
+export function exportAllRecipesIni(path: string): Promise<void> {
+  return invoke('export_all_recipes_ini', { path });
+}
+
 export function importRecipe(path: string): Promise<Recipe> {
   return invoke('import_recipe', { path });
 }

@@ -173,6 +173,9 @@
             <DropdownMenu.Item onclick={() => appStore.exportRecipe(recipe)}>
               <FileUp /> Export .ripe…
             </DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => appStore.exportRecipeIni(recipe)}>
+              <FileUp /> Export as INI preset…
+            </DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item
               variant="destructive"

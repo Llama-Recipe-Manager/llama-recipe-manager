@@ -6,6 +6,7 @@
 
 mod commands;
 pub mod db;
+mod ini;
 mod process;
 mod ripe;
 mod secrets;
@@ -60,6 +61,8 @@ pub fn run() {
             commands::recipes::duplicate_recipe,
             commands::recipes::set_recipe_pinned,
             commands::recipes::export_recipe,
+            commands::recipes::export_recipe_ini,
+            commands::recipes::export_all_recipes_ini,
             commands::recipes::import_recipe,
             commands::server::get_llama_server_info,
             commands::models::scan_models,

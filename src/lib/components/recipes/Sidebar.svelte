@@ -1,6 +1,7 @@
 <script lang="ts">
   import ArrowDownUp from '@lucide/svelte/icons/arrow-down-up';
   import FileDown from '@lucide/svelte/icons/file-down';
+  import FileUp from '@lucide/svelte/icons/file-up';
   import Plus from '@lucide/svelte/icons/plus';
   import Search from '@lucide/svelte/icons/search';
 
@@ -41,6 +42,22 @@
         {/snippet}
       </Tooltip.Trigger>
       <Tooltip.Content>Import .ripe file</Tooltip.Content>
+    </Tooltip.Root>
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Export all recipes as INI"
+            onclick={() => appStore.exportAllRecipesIni()}
+          >
+            <FileUp />
+          </Button>
+        {/snippet}
+      </Tooltip.Trigger>
+      <Tooltip.Content>Export all as INI preset file</Tooltip.Content>
     </Tooltip.Root>
     <Tooltip.Root>
       <Tooltip.Trigger>
